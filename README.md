@@ -7,8 +7,7 @@ This is the repository for the code for The EUCLIDEAN synthesiser. The main sket
 - The ST7735_t3 library is used for the LCD. The fonts I use are in the Fonts folder, and need to be added to the library if not already present.
 
 - The other libraries needed are:
-
-  - IntervalTimer
+	- IntervalTimer
 	- Bounce2mcp
 	- Adafruit_MCP23017
 	- MIDI
