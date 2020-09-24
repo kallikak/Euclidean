@@ -1,0 +1,9 @@
+#define DK_OFF        0
+#define DK_BASS       100
+#define DK_SNARE      101
+#define DK_HAT_C      102
+#define DK_HAT_O      103
+#define DK_TOM_L      104
+#define DK_TOM_M      105
+#define DK_TOM_H      106
+#define DK_LAST       106
