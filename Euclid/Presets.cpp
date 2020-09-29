@@ -698,7 +698,7 @@ bool loadConfigData(File file, config_ptr cfg)
     o->pwamt = intRange(bits[2], 0, 127);
     o->pwm = bits[3] ? true : false;
     o->modamt = intRange(bits[4], 0, 127);
-    o->detune = intRange(bits[5], 0, 32);
+    o->detune = intRange(bits[5], 0, 50);
     o->subfreq = intRange(bits[6], 2, 16);
     o->subshape = (waveshape)intRange(bits[7], 0, 7);
   }

@@ -271,16 +271,16 @@ void Oscillator::loadConfig(oscillatorCfg *cfg, mixerCfg *mixCfg)
     if (cfg->freq != savefreq)
     {
       freq = noteToFreq(cfg->freq);
-      oscA->frequency(freq);
-      oscB->frequency(freq);
+//      oscA->frequency(freq);
+//      oscB->frequency(freq);
       playf = freq;
     }
     subfreqdiv = cfg->subfreq;
     playsubf = freq / subfreqdiv;
-    subA->frequency(freq / cfg->subfreq);
-    subB->frequency(freq / cfg->subfreq);
-    offsetSteps = 0;
-    suboffsetSteps = 0;
+//    subA->frequency(freq / cfg->subfreq);
+//    subB->frequency(freq / cfg->subfreq);
+//    offsetSteps = 0;
+//    suboffsetSteps = 0;
     detune = cfg->detune;
     
     setShape(cfg->shape);

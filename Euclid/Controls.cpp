@@ -336,7 +336,7 @@ void checkEncoders(unsigned long now)
           case SELECT_O1:
           case SELECT_O2:
           case SELECT_OS:
-            accel = (i != 4);  // don't accelerate subfrequency
+            accel = (i == 1 && config->tuning.scale == FREE) || i == 2 || i == 3;  // don't accelerate subfrequency or non-free frequency
             break;
           case SELECT_ENV:
             accel = (i != 1);  // don't accelerate quantise
@@ -452,7 +452,7 @@ void updateActiveMeter(int d)
 void handleFreq(int i, encoder *e, int d, bool dual1, bool dual2)
 {
   // range is MIDI note 40 to 76
-  float step = config->tuning.scale == FREE ? 0.1 : 1;
+  float step = config->tuning.scale == FREE ? 0.025 : 1;
   float val = max(e->minval[i], min(e->maxval[i], config->osc[i].freq + d * step));
   float f = noteToFreq(val);
 #if DEBUG_SERIAL          
@@ -1166,7 +1166,7 @@ void handleEncoderShiftTurn(int i, bool back)
           if (config->osc[selected].detune > 30)
             config->osc[selected].detune = 0;
 #else
-          config->osc[selected].detune = max(0, min(32, config->osc[selected].detune + (back ? -1 : 1)));
+          config->osc[selected].detune = max(0, min(50, config->osc[selected].detune + (back ? -1 : 1)));
 #endif
           textatrow(1, "Osc detune", LCD_BLACK, LCD_WHITE);
           sprintf(tempstr, "%5d", config->osc[selected].detune);
@@ -1183,7 +1183,7 @@ void handleEncoderShiftTurn(int i, bool back)
           if (config->osc[0].detune > 30)
             config->osc[0].detune = 0;
 #else
-          config->osc[0].detune = max(0, min(32, config->osc[0].detune + (back ? -1 : 1)));
+          config->osc[0].detune = max(0, min(50, config->osc[0].detune + (back ? -1 : 1)));
 #endif
           config->osc[1].detune = config->osc[0].detune;
           textatrow(1, "Osc detune", LCD_BLACK, LCD_WHITE);

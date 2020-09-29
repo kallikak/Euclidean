@@ -438,6 +438,8 @@ void setup(void)
   Serial.begin(9600);
   Serial.println("Welcome to Euclid");
   
+  Wire.setClock(1000000);
+  
   setupSynth();
   synth = makeSynth();
   synth->loadConfig(config);

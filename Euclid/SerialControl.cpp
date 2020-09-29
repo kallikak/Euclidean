@@ -355,6 +355,11 @@ void runSerialCommand()
     Serial.print("Max memory usage: ");
     Serial.println(AudioMemoryUsageMax());
   }
+  else if (strcasecmp(cmd, "temp") == 0)
+  {
+    Serial.print("MCU Temperature: ");
+    Serial.println(tempmonGetTemp());
+  }
   else if (strcasecmp(cmd, "mute") == 0 && a1)
   {
     if (strcasecmp(a1, "o1") == 0)
@@ -524,8 +529,8 @@ void runSerialCommand()
   }
   else if (strcasecmp(cmd, "det") == 0 && a1)
   {
-    config->osc[0].detune = min(32, max(0, atol(a1)));
-    config->osc[1].detune = min(32, max(0, atol(a1)));
+    config->osc[0].detune = min(50, max(0, atol(a1)));
+    config->osc[1].detune = min(50, max(0, atol(a1)));
     synth->loadOscConfig(&config->osc[0], 0);
     synth->loadOscConfig(&config->osc[1], 1);
   }
@@ -566,7 +571,7 @@ void runSerialCommand()
     Serial.println("\tOsc:       osc i f sh    (set oscillator note [40,76] and shape - i = 1 or 2, sh [sin,tri,sq,saw,p])");
     Serial.println("\tSub-osc:   sub i d sh    (set sub-oscillator divisor [2,16] and shape - i = 1 or 2, sh [sin,tri,sq,saw,p])");
     Serial.println("\tOsc mod:   omod i pw mod (set oscillator pw [0,127](+/-) and modamt [0,127] - i = 1 or 2, optional (+/-) toggles pw mod)");
-    Serial.println("\tDetune:    det n         (set detune to n [0,32] for both oscillators)");
+    Serial.println("\tDetune:    det n         (set detune to n [0,50] cents for both oscillators)");
     Serial.println("\tLFO:       lfo rate sh   (set lfo rate [0,127] and shape [sin,tri,sq,saw,s+h] - '.' for no change)");
     Serial.println("\tEnvelope:  env a d       (set attack and decay - [0,127] or '.' for no change)");
     Serial.println("\tFilter:    f co res      (set cutoff and resonance - [0,127] or '.' for no change)");
