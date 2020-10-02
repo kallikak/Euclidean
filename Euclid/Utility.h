@@ -8,6 +8,8 @@ float freqToNote(float f);
 
 float noteToFreq(float n);
 
+float freqToMIDINote(float f);
+
 float offsetToFreq(int k, float f0);
 
 int roundnotenumber(float n);

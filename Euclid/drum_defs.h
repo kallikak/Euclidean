@@ -6,4 +6,12 @@
 #define DK_TOM_L      104
 #define DK_TOM_M      105
 #define DK_TOM_H      106
-#define DK_LAST       106
+#define DK_CLAVES			107
+#define DK_CONGA_L		108
+#define DK_CONGA_M		109
+#define DK_CONGA_H    110
+#define DK_CYMBAL     111
+#define DK_RIDECYMBAL 112
+#define DK_RIMSHOT    113
+#define DK_MARACAS    114
+#define DK_LAST       114

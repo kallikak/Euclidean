@@ -3,9 +3,11 @@
 #include <Arduino.h>
 
 #include "Config.h"
+#include "MIDIManager.h"
 #include "Sequencer.h"
 #include "Synth.h"
 #include "Utility.h"
+#include "Controls.h"
 
 #include "sawtoothWave.h"
 #include "squareWave.h"
@@ -40,7 +42,7 @@ Filter::Filter(AudioFilterStateVariable* filter, AudioFilterStateVariable* drumf
   fmix->gain(1, 1);  
   
   filterpreamp->gain(0.5);
-  drumfilterpreamp->gain(0.25);
+  drumfilterpreamp->gain(0.5);
   
   // and the filter values
   co = 6000;
@@ -262,6 +264,9 @@ Oscillator::Oscillator(int i, AudioSynthWaveformModulated *o1, AudioSynthWavefor
   // the individual osc/sub mixer
   mix->gain(0, 0.2);  
   mix->gain(1, 0.2);
+
+  saven = -1;
+  savesubn = -1;
 }
 
 void Oscillator::loadConfig(oscillatorCfg *cfg, mixerCfg *mixCfg)
@@ -310,6 +315,9 @@ void Oscillator::cancelPlay()
 {
   overrideTuning = false;
   savefreq = -1;
+  saven = -1;
+  savesubn = -1;
+  stopAllMIDI();
 }
 
 void Oscillator::setModAmount(ccInt u)
@@ -414,6 +422,10 @@ void Oscillator::applyFreq(bool applySubOnly)
       playf = f;    
       oscA->frequency(f);
       oscB->frequency(detuneCents(f, detune));
+      saven = freqToMIDINote(f);
+      // Hack: lift it by octaves to avoid crashing out of MIDI range
+      while (saven <= 0)
+        saven += 12; 
     }
   }
   if (activeSubWavetable)
@@ -436,6 +448,10 @@ void Oscillator::applyFreq(bool applySubOnly)
     playsubf = subf;
     subA->frequency(subf);
     subB->frequency(subf);
+    savesubn = freqToMIDINote(subf);
+    // Hack: lift it by octaves to avoid crashing out of MIDI range
+    while (savesubn <= 0)
+      savesubn += 12; 
   }
 }
 
@@ -546,11 +562,26 @@ void Oscillator::setOffsetSteps(int o, int s, bool doosc, bool dosub)
 {
   if (doosc || dosub)
   {
+    if (saven > 0)
+      sendMIDINoteOff(saven, (index << 1) + 1);
+    if (savesubn > 0)
+      sendMIDINoteOff(savesubn, (index << 1) + 2);
     if (doosc)
+    {
       offsetSteps = o;
+    }
     if (dosub)
+    {
       suboffsetSteps = s;
+    }
     applyFreq(!doosc);
+    
+    mixerCfg *mixCfg = &config->mix;
+    if (poly->running || synth->droning)
+    {
+      sendMIDINoteOn(saven, mixCfg->oscmute[index] ? 0 : mixCfg->osclevel[index], (index << 1) + 1);
+      sendMIDINoteOn(savesubn, mixCfg->submute[index] ? 0 : mixCfg->sublevel[index], (index << 1) + 2);
+    }
   }
 }
 

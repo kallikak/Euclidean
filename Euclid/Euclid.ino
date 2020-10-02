@@ -171,9 +171,10 @@ void setupSynth()
   
   AudioMemory(500);
   sgtl5000_1.enable();
-  sgtl5000_1.volume(0.75);
+  sgtl5000_1.volume(0.7);
   sgtl5000_1.muteLineout();
   sgtl5000_1.enhanceBassEnable();
+  sgtl5000_1.autoVolumeControl(0,2,0,-18.0,200,2000);  //maxGain,response,hard limit,threshold,attack, decay
 }
 
 Polyrhythm *poly = new Polyrhythm();
@@ -498,5 +499,5 @@ void loop()
 /*
  * - Drop in gain from effects (especially chorus)
  * - Consider some gain increase inverse to cutoff frequency
- * - Add MIDI support for clock out, and define CCs
+ * - Add support for MIDI CCs?
  */

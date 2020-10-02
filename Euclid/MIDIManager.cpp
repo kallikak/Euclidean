@@ -167,10 +167,7 @@ void handleClock()
   clockCount++;
   samples++;
   unsigned long thisbeattime = micros();
-  float newbpm = 60.0 * 1000 * 1000 / 12.0 / (thisbeattime - lastbeattime);
-    DBG(lastbeattime)
-    DBG(thisbeattime)
-    DBG(thisbeattime - lastbeattime)
+  float newbpm = 60.0 * 1000 * 1000.0 / MIDI_CLOCKS_PER_BEAT / (thisbeattime - lastbeattime);
   if (samples > 20 && thisbeattime > lastbeattime)
   {
     bpm = movingaveragefloat(newbpm, bpm, bpm == 0 ? 0 : round(2 * bpm / 40));
@@ -181,7 +178,7 @@ void handleClock()
     Serial.println(bpm);
 #endif     
   }
-  if (clockCount == 12) // should be 24...
+  if (clockCount == MIDI_CLOCKS_PER_BEAT) // should be 24...
   {
     clockCount = 0;
     if (lastbeattime)
@@ -237,6 +234,7 @@ void resetMIDI()
   currentNote = NO_NOTE;
   synth->noteoff(0);
   synth->noteoff(1);
+  stopAllMIDI();
 }
 
 void setupMIDI()
@@ -270,4 +268,102 @@ void checkMIDI()
   MIDI.read();
   usbHost.Task();
   usbmidi.read();
+}
+
+static int count = 0;
+
+void sendMIDINoteOn(byte note, byte vel, byte chan)
+{
+  MIDI.sendNoteOn(note, vel, chan);
+  usbmidi.sendNoteOn(note, vel, chan);
+#if DEBUG_SERIAL 
+  Serial.print(count / 12.0);
+  Serial.print(": Note on: ");
+  Serial.print(note);
+  Serial.print(" with vel: ");
+  Serial.print(vel);
+  Serial.print(" on channel: ");
+  Serial.println(chan);
+#endif  
+}
+
+void sendMIDINoteOff(byte note, byte chan)
+{
+  MIDI.sendNoteOff(note, 0, chan);
+  usbmidi.sendNoteOff(note, 0, chan);
+#if DEBUG_SERIAL  
+  Serial.print(count / 12.0);
+  Serial.print(": Note off: ");
+  Serial.print(note);
+  Serial.print(" on channel: ");
+  Serial.println(chan);
+#endif  
+}
+
+void stopAllMIDI()
+{
+  MIDI.sendControlChange(123, 0, 1);
+  MIDI.sendControlChange(123, 0, 2);
+  usbmidi.sendControlChange(123, 0, 1);
+  usbmidi.sendControlChange(123, 0, 2);
+#if DEBUG_SERIAL  
+  Serial.println("All MIDI notes off");
+#endif  
+}
+
+#if DEBUG_SERIAL  
+static unsigned long last;
+static int sum = 0;
+#endif
+
+void sendMIDIClock()
+{
+  count++;
+  if (useMIDIClock)
+    return;
+  MIDI.sendRealTime(midi::Clock);
+  usbmidi.sendRealTime(usbmidi.Clock);
+#if DEBUG_SERIAL  
+  unsigned long now = micros();
+  sum += (now - last);
+  if (count == 12)
+  {
+    Serial.print("MIDI clock ");
+    Serial.println(sum / 1000.0);
+    sum = 0;
+    count = 0;
+  }
+  last = now;
+#endif
+}
+
+void sendMIDIClockStart()
+{
+  count = 0;
+  if (useMIDIClock)
+    return;
+  MIDI.sendRealTime(midi::Start);
+  usbmidi.sendRealTime(usbmidi.Start);
+#if DEBUG_SERIAL  
+  Serial.print("MIDI clock start ");
+  last = micros();
+  Serial.println(last);
+  sum = 0;
+#endif
+}
+
+void sendMIDIClockContinue()
+{
+  if (useMIDIClock)
+    return;
+  MIDI.sendRealTime(midi::Continue);
+  usbmidi.sendRealTime(usbmidi.Continue);
+}
+
+void sendMIDIClockStop()
+{
+  if (useMIDIClock)
+    return;
+  MIDI.sendRealTime(midi::Stop);
+  usbmidi.sendRealTime(usbmidi.Stop);
 }

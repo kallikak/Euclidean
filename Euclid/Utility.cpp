@@ -104,6 +104,11 @@ float noteToFreq(float n)
     return pow(2, (n - 49) / 12.0) * 440;
 }
 
+float freqToMIDINote(float f)
+{
+  return 20 + freqToNote(f);
+}
+
 /* 
  * Just intonation major octave ratios: 0 9/8 5/4 4/3 3/2 5/3 15/8 2
  * Just intonation minor octave ratios: 0 9/8 6/5 4/3 3/2 8/5 15/8 2

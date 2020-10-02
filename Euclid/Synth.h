@@ -90,6 +90,10 @@ class Oscillator
 
     float playf;
     float playsubf;
+    float savefreq;
+
+    int saven;
+    int savesubn;
     
     int offsetSteps;
     int suboffsetSteps;
@@ -101,7 +105,6 @@ class Oscillator
     int curidx;
   
     bool overrideTuning;
-    float savefreq;
     waveshape saveshape;
     waveshape savesubshape;
 

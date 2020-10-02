@@ -1399,6 +1399,7 @@ void buttonPressed(int j, int e)
         switchOff();
         synth->stop();
         poly->stop();
+        sendMIDIClockStop();
         managePlayState();
         resetMIDI();
         showTuning(&config->tuning);
@@ -1418,6 +1419,7 @@ void buttonPressed(int j, int e)
           synth->stop();
           polySetup();
           managePlayState();
+          sendMIDIClockStart();
         }
         showSelectSummary(selected);
         break;

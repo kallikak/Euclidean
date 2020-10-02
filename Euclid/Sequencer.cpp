@@ -7,13 +7,22 @@
 #include "Synth.h"
 #include "Controls.h"
 #include "Drums.h"
+#include "MIDIManager.h"
 
 #define PERMUTE_LOOP_COUNT 8
 
 static volatile bool fire = false;
+static volatile bool clockfire = false;
+static volatile int beatcount = 0;
+
 void callback()
 {
-  fire = true;
+  clockfire = true;
+  if (++beatcount == MIDI_CLOCKS_PER_BEAT)
+  {
+    fire = true;
+    beatcount = 0;
+  }
 }
 
 void extClockFire()
@@ -33,6 +42,7 @@ Polyrhythm::Polyrhythm()
   }
   onestep = false;
   oneshotfn = NULL;
+  beatcount = 0;
 }
 
 Polyrhythm::~Polyrhythm()
@@ -143,13 +153,17 @@ void Polyrhythm::run(rhythmcallbacktype onbeat, rhythmcallbacktype onoffbeat, in
   beatcallback = onbeat;
   offbeatcallback = onoffbeat;
   if (!useMIDIClock)
-    timer.begin(callback, delay * 1000);
+  {
+    beatcount = 0;
+    timer.begin(callback, round(delay * 1000.0 / MIDI_CLOCKS_PER_BEAT));
+  }
 #if DEBUG_SERIAL
   Serial.print("Setting timer delay ");
   Serial.print(delay);
   Serial.println("ms");
 #endif
   fire = true;
+  clockfire = false;
 //  handleCallbacks();
 }
 
@@ -161,8 +175,18 @@ void Polyrhythm::setoneshotfn(oneshotfntype fn)
 //static unsigned long last = 0;
 void Polyrhythm::handleCallbacks()
 { 
-  if (!running || !fire)
+  if (!running)
     return;
+    
+  if (clockfire)
+  {
+    clockfire = false;
+    sendMIDIClock();  
+  }
+  
+  if (!fire)
+    return;
+    
 //  noInterrupts();
   fire = false;
 //  interrupts();
@@ -237,7 +261,7 @@ void Polyrhythm::regenerate(rhythmCfg *rs)
 void Polyrhythm::setTempo(int tempo)
 {
   delay = tempoToDelay(tempo);  
-  timer.update(delay * 1000);
+  timer.update(round(delay * 1000.0 / MIDI_CLOCKS_PER_BEAT));
   if (config->eff.active == DELAY || config->eff.active == CHORUS_DELAY)
   {
     if (config->eff.delay != BYPASS)
