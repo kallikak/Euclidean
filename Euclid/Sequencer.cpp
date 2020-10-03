@@ -243,7 +243,7 @@ void Polyrhythm::doonestep()
 {
   onestep = true;
   i++;
-  timer.update(1000000);
+  timer.update(1000000 / MIDI_CLOCKS_PER_BEAT);
 }
 
 void Polyrhythm::regenerate(rhythmCfg *rs)
