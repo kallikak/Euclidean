@@ -2058,6 +2058,8 @@ void setInitialVolumes()
 void polySetup()
 {
   poly->pause = seq1->pause = seq2->pause = false;
+  seq1->reset();
+  seq2->reset();
   seq1->update(false);
   seq2->update(false);
   showSequencerLabels(seq1->isPermuting(), seq2->isPermuting());
