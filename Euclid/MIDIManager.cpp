@@ -304,8 +304,12 @@ void stopAllMIDI()
 {
   MIDI.sendControlChange(123, 0, 1);
   MIDI.sendControlChange(123, 0, 2);
+  MIDI.sendControlChange(123, 0, 3);
+  MIDI.sendControlChange(123, 0, 4);
   usbmidi.sendControlChange(123, 0, 1);
   usbmidi.sendControlChange(123, 0, 2);
+  usbmidi.sendControlChange(123, 0, 3);
+  usbmidi.sendControlChange(123, 0, 4);
 #if DEBUG_SERIAL  
   Serial.println("All MIDI notes off");
 #endif  
