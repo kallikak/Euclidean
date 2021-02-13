@@ -159,6 +159,56 @@ float bpm = 200;
 int lastupdatebpm = 0;
 int samples = 0;
 
+ExtFactor extFactor = UNITY;
+int checkCount;
+
+void updateExtFactor(ExtFactor newFactor)
+{
+  extFactor = newFactor;
+  switch (extFactor)
+  {
+    case THIRD:
+      checkCount = MIDI_CLOCKS_PER_BEAT * 3;
+      break;
+    case HALF:
+      checkCount = MIDI_CLOCKS_PER_BEAT * 2;
+      break;
+    case UNITY:
+      checkCount = MIDI_CLOCKS_PER_BEAT;
+      break;
+    case DOUBLE:
+      checkCount = MIDI_CLOCKS_PER_BEAT / 2;
+      break;
+    case TRIPLE:
+      checkCount = MIDI_CLOCKS_PER_BEAT / 3;
+      break;
+  }
+  clockCount %= checkCount; // incase we are already over
+  DBG(extFactor);
+  DBG(checkCount);
+}
+
+#define BUFFERSIZE 21
+#define MIDBUFFER (BUFFERSIZE >> 1)
+float clockbuffer[BUFFERSIZE] = { 0 };
+float sortbuffer[BUFFERSIZE];
+int clockbufferindex = 0;
+
+int sort_desc(const void *cmp1, const void *cmp2)
+{
+  // Need to cast the void * to int *
+  float a = *((float *)cmp1);
+  float b = *((float *)cmp2);
+  return b - a;
+}
+
+float median() 
+{
+  memcpy(sortbuffer, clockbuffer, BUFFERSIZE * sizeof(float));
+  qsort(sortbuffer, BUFFERSIZE, sizeof(sortbuffer[0]), sort_desc);
+  return sortbuffer[MIDBUFFER];
+}
+
 void handleClock()
 {
 #if DEBUG_SERIAL    
@@ -167,18 +217,28 @@ void handleClock()
   clockCount++;
   samples++;
   unsigned long thisbeattime = micros();
-  float newbpm = 60.0 * 1000 * 1000.0 / MIDI_CLOCKS_PER_BEAT / (thisbeattime - lastbeattime);
-  if (samples > 20 && thisbeattime > lastbeattime)
+  if (lastbeattime > 0 && thisbeattime > lastbeattime)
   {
-    bpm = movingaveragefloat(newbpm, bpm, bpm == 0 ? 0 : round(2 * bpm / 40));
+    float newbpm = 60 * 1000 * 1000.0 / MIDI_CLOCKS_PER_BEAT / (thisbeattime - lastbeattime);
 #if DEBUG_SERIAL    
-    Serial.print("Millis since last beat: ");
-    Serial.print((thisbeattime - lastbeattime) / 1000.0);
-    Serial.print(" => bpm of ");
-    Serial.println(bpm);
+    Serial.print("newbpm is ");
+    Serial.println(newbpm);
+#endif
+    clockbuffer[clockbufferindex] = newbpm;
+    clockbufferindex = (clockbufferindex + 1) % BUFFERSIZE;
+    if (samples >= BUFFERSIZE)
+    {
+      bpm = median();
+#if DEBUG_SERIAL    
+      Serial.print("Millis since last beat: ");
+      Serial.print((thisbeattime - lastbeattime) / 1000.0);
+      Serial.print(" => bpm of ");
+      Serial.println(bpm);
 #endif     
+    }
   }
-  if (clockCount == MIDI_CLOCKS_PER_BEAT) // should be 24...
+//  if (clockCount == MIDI_CLOCKS_PER_BEAT) // should be 24...
+  if (clockCount == checkCount) // should be 24...
   {
     clockCount = 0;
     if (lastbeattime)
@@ -191,6 +251,7 @@ void handleClock()
         lastupdatebpm = rbpm;
       }
     }
+//    Serial.println("Fire");
     extClockFire();
   }
   lastbeattime = thisbeattime;
@@ -241,7 +302,7 @@ void setupMIDI()
 {
   DBG(useMIDIClock)
   MIDI.begin(MIDI_CHANNEL_OMNI);   
-  MIDI.setHandleNoteOn(handleNoteOn);  // Put only the name of the function
+  MIDI.setHandleNoteOn(handleNoteOn);
   MIDI.setHandleNoteOff(handleNoteOff);
   if (useMIDIClock)
   {
@@ -256,16 +317,28 @@ void setupMIDI()
   usbmidi.setHandleNoteOff(handleNoteOff);
   if (useMIDIClock)
   {
+    usbMIDI.setHandleClock(handleClock);
     usbmidi.setHandleClock(handleClock);
     usbmidi.setHandleStart(handleStart);
     usbmidi.setHandleContinue(handleContinue);
     usbmidi.setHandleStop(handleStop);
+  }
+  
+  usbMIDI.setHandleNoteOn(handleNoteOn);
+  usbMIDI.setHandleNoteOff(handleNoteOff);
+  if (useMIDIClock)
+  {
+    usbMIDI.setHandleClock(handleClock);
+    usbMIDI.setHandleStart(handleStart);
+    usbMIDI.setHandleContinue(handleContinue);
+    usbMIDI.setHandleStop(handleStop);
   }
 }
 
 void checkMIDI()
 {
   MIDI.read();
+  usbMIDI.read();
   usbHost.Task();
   usbmidi.read();
 }

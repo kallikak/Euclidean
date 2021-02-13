@@ -190,6 +190,34 @@ void showTempo(int bpm)
 #endif  
 }
 
+void showExtFactor(ExtFactor factor)
+{
+  tft.setFont(Arial_12_Bold);
+  tft.setTextColor(LCD_BLACK);
+  int16_t x = 0;
+  int16_t y = 4 * ROW_HEIGHT + 14;
+  
+  tft.fillRect(x, y - 4, 105, ROW_HEIGHT + 2, LCD_YELLOW);
+  tft.setCursor(x + 4, y - 2);
+  char tempstr[30];
+  switch (factor)
+  {
+    case THIRD:
+      sprintf(tempstr, "T: ext * 1/3");
+      break;
+    case HALF:
+      sprintf(tempstr, "T: ext * 1/2");
+      break;
+    default:
+      sprintf(tempstr, "T: ext * %d", (int)(factor - 1));
+      break;
+  }
+  tft.print(tempstr);  
+#if MY_USE_FB
+  tft.updateScreen();
+#endif  
+}
+
 void showTuning(tuningCfg *tuning)
 { 
   tft.setFont(Arial_12_Bold);

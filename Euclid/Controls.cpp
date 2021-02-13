@@ -226,6 +226,8 @@ const float SCALE = CENTRE / (MAXPOTVAL - CENTRE - ZERO_RANGE);
 #define TEMPO_POT 8
 #define VOLUME_POT 9
 #define DRUM_VOL_POT 10
+
+#define BLOCK_TEMPO_UPDATE -1
  
 uint16_t blockMillis = 0;
 
@@ -1330,6 +1332,7 @@ void checkMIDIClock()
   {
     textatrow(1, "Using MIDI clock", LCD_BLACK, LCD_WHITE);
     textatrow(2, "", LCD_BLACK, LCD_WHITE);
+    pots[TEMPO_POT].value = BLOCK_TEMPO_UPDATE;
   }
 }
 
@@ -1549,7 +1552,7 @@ int scalepot(int actual, int saved, int delta, int maxval, int minval, int thres
 }
 
 void checkPots(int potindex, bool setOnly, bool avgOnly, unsigned long now)
-{      
+{
   int i = potindex;
   pot *p = &pots[i];
   if (setOnly)
@@ -1610,7 +1613,14 @@ void checkPots(int potindex, bool setOnly, bool avgOnly, unsigned long now)
       }
       else
         adjv = v;
-      handlePot(i, adjv >> 3);
+      
+      if (useMIDIClock && p->value == BLOCK_TEMPO_UPDATE)
+      {
+        Serial.println("Blocking initial tempo update when externally clocked");
+        p->value = 0;
+      }
+      else
+        handlePot(i, adjv >> 3);
     }
     else
     {
@@ -1634,9 +1644,18 @@ void handlePot(int i, int value)
   {
     case TEMPO_POT:
     {
-      config->rhythm.tempo = value;
-      poly->setTempo(value);
-      showTempo(useMIDIClock ? -1 : (int)round(60000.0 / poly->tempoToDelay(value)));
+      if (useMIDIClock)
+      {
+        value = max(0, min(4, (int)(value * 5.0 / 127)));
+        updateExtFactor((ExtFactor)value); // reduce to 2 bits
+        showExtFactor((ExtFactor)value);
+      }
+      else
+      {
+        config->rhythm.tempo = value;
+        poly->setTempo(value);
+        showTempo((int)round(60000.0 / poly->tempoToDelay(value)));
+      }
 #if DEBUG_SERIAL
       Serial.print("Tempo: ");Serial.print(value);Serial.print(" -> ");Serial.print((int)round(60000.0 / poly->tempoToDelay(value)));Serial.println("bpm");
 #endif      
@@ -2023,6 +2042,13 @@ void setSequenceLed(int seq, int led, bool onoff)
 
 void setToCurTempo()
 {
+  if (useMIDIClock)
+  {
+    // initially set to UNITY regardless of controller position
+    updateExtFactor(UNITY);
+    showExtFactor(UNITY);
+    return;
+  }
   pot *p = &pots[TEMPO_POT];
   digitalWrite(6, p->pin & 0x01);
   digitalWrite(5, p->pin & 0x02);

@@ -115,14 +115,11 @@ void managedrumclick(bool back)
 
 void manageoffbeatclick(bool back)
 {
-  DBG(curCfg->beats[OFFBEAT])
   curCfg->beats[OFFBEAT] = curCfg->beats[OFFBEAT] + (back ? -1 : 1);
-  DBG(curCfg->beats[OFFBEAT])
   if (curCfg->beats[OFFBEAT] > DK_LAST)
     curCfg->beats[OFFBEAT] = DK_BASS;
   else if (curCfg->beats[OFFBEAT] < DK_BASS)
     curCfg->beats[OFFBEAT] = DK_LAST;
-  DBG(curCfg->beats[OFFBEAT])
 }
 
 void playDrumSample(Beat beat, bool accent)

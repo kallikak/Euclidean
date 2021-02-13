@@ -123,7 +123,7 @@ const char *getInstrumentDesc(int type, bool shortDesc)
 #endif
 #ifdef DK_RIDECYMBAL
     case DK_RIDECYMBAL:
-      return shortDesc ? "RD" : "Ride Cymbal";
+      return shortDesc ? "Rd" : "Ride Cymbal";
 #endif
 #ifdef DK_RIMSHOT
     case DK_RIMSHOT:

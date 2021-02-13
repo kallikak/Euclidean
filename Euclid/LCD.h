@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "Controls.h"
+#include "MIDIManager.h"
 
 //#define LCD_BLACK      0x0000
 //#define LCD_WHITE      0xFFFF
@@ -31,6 +32,7 @@ void setupLCD(void);
 void showRhythm(int active, rhythmCfg *rhythm, bool shift);
 void showTuning(tuningCfg *tuning);
 void showTempo(int bpm);
+void showExtFactor(ExtFactor factor);
 void showRhythmGraph(Polyrhythm *poly, int activemeter);
 void showNextBeats(int *next, int n);
 void showSequencerLabels(bool permuting1, bool permuting2);

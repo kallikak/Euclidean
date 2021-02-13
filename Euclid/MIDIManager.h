@@ -2,6 +2,17 @@
 
 #define MIDI_CLOCKS_PER_BEAT 12
 
+typedef enum
+{
+  THIRD,
+  HALF,
+  UNITY,
+  DOUBLE,
+  TRIPLE
+} ExtFactor;
+
+void updateExtFactor(ExtFactor newFactor);
+
 void managePlayState();
 
 void setupMIDI();
