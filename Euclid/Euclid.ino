@@ -451,6 +451,14 @@ void setup(void)
   setupPresets();
   managePlayState();
   polySetup();
+  
+  if (useMIDIClock)
+  {
+    // initially set to UNITY regardless of controller position
+    updateExtFactor(UNITY);
+    showExtFactor(UNITY);
+  }
+  
   poly->stop();
   synth->stop();
   initDrums(&drummix, &sound1, &sound2, &sound3, &sound4);

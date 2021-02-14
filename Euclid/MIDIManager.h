@@ -29,6 +29,8 @@ void stopAllMIDI();
 
 void sendMIDIClock();
 
+int getBPM();
+
 void sendMIDIClockStart();
 
 void sendMIDIClockContinue();

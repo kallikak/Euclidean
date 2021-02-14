@@ -179,10 +179,10 @@ void showTempo(int bpm)
   
   tft.fillRect(x, y - 4, 105, ROW_HEIGHT + 2, LCD_YELLOW);
   char tempstr[30];
-  if (bpm <= 0)
-    sprintf(tempstr, "T: External");
-  else
+  if (bpm)
     sprintf(tempstr, "T:%4dbpm", bpm);
+  else
+    sprintf(tempstr, "T: - ");
   tft.setCursor(x + 4, y - 2);
   tft.print(tempstr);  
 #if MY_USE_FB

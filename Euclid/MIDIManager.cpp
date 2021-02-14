@@ -162,27 +162,28 @@ int samples = 0;
 ExtFactor extFactor = UNITY;
 int checkCount;
 
+float getExtFactorValue(ExtFactor f, bool inverse)
+{
+  switch (f)
+  {
+    case THIRD:
+      return inverse ? 3 : 1 / 3.0;
+    case HALF:
+      return inverse ? 2 : 0.5;
+    case UNITY:
+      return 1;
+    case DOUBLE:
+      return inverse ? 0.5 : 2;
+    case TRIPLE:
+      return inverse ? 1 / 3.0 : 3;
+  }
+  return 1;
+}
+
 void updateExtFactor(ExtFactor newFactor)
 {
   extFactor = newFactor;
-  switch (extFactor)
-  {
-    case THIRD:
-      checkCount = MIDI_CLOCKS_PER_BEAT * 3;
-      break;
-    case HALF:
-      checkCount = MIDI_CLOCKS_PER_BEAT * 2;
-      break;
-    case UNITY:
-      checkCount = MIDI_CLOCKS_PER_BEAT;
-      break;
-    case DOUBLE:
-      checkCount = MIDI_CLOCKS_PER_BEAT / 2;
-      break;
-    case TRIPLE:
-      checkCount = MIDI_CLOCKS_PER_BEAT / 3;
-      break;
-  }
+  checkCount = MIDI_CLOCKS_PER_BEAT * getExtFactorValue(extFactor, true);
   clockCount %= checkCount; // incase we are already over
   DBG(extFactor);
   DBG(checkCount);
@@ -207,6 +208,13 @@ float median()
   memcpy(sortbuffer, clockbuffer, BUFFERSIZE * sizeof(float));
   qsort(sortbuffer, BUFFERSIZE, sizeof(sortbuffer[0]), sort_desc);
   return sortbuffer[MIDBUFFER];
+}
+
+static int rbpm;
+
+int getBPM()
+{
+  return rbpm;
 }
 
 void handleClock()
@@ -243,10 +251,12 @@ void handleClock()
     clockCount = 0;
     if (lastbeattime)
     {
-      long rbpm = round(bpm);
+      rbpm = round(bpm);
 //    if (lastupdatebpm != rbpm)
       if (rbpm > 0 && (lastupdatebpm < 60 || abs(lastupdatebpm - rbpm) > 2))
       {
+        if (useMIDIClock)
+          rbpm *= getExtFactorValue(extFactor, false);
         showTempo(rbpm);
         lastupdatebpm = rbpm;
       }

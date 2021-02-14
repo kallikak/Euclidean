@@ -1621,6 +1621,7 @@ void checkPots(int potindex, bool setOnly, bool avgOnly, unsigned long now)
       }
       else
         handlePot(i, adjv >> 3);
+      lastupdatemillis = now;
     }
     else
     {
@@ -1880,6 +1881,12 @@ void checkControls(int loopcount)
       saveNewPresetSelected = false;
       showSelectSummary(selected);
       lastupdatemillis = -1;
+      if (useMIDIClock)
+      {
+        int curbpm = getBPM();
+        if (curbpm > 0)
+          showTempo(curbpm);
+      }
       if (!metershift)
       {
         metershift = true;
@@ -2043,12 +2050,8 @@ void setSequenceLed(int seq, int led, bool onoff)
 void setToCurTempo()
 {
   if (useMIDIClock)
-  {
-    // initially set to UNITY regardless of controller position
-    updateExtFactor(UNITY);
-    showExtFactor(UNITY);
     return;
-  }
+  
   pot *p = &pots[TEMPO_POT];
   digitalWrite(6, p->pin & 0x01);
   digitalWrite(5, p->pin & 0x02);
@@ -2156,7 +2159,8 @@ bool loadPreset(int preset)
   showTuning(&config->tuning);
   showRhythm(0, &config->rhythm, metershift);
   updateStepsDisplay();
-  showTempo((int)round(60000.0 / poly->tempoToDelay(config->rhythm.tempo)));
+  if (!useMIDIClock)
+    showTempo((int)round(60000.0 / poly->tempoToDelay(config->rhythm.tempo)));
   transposeTime = -1;
 #if PROTOTYPE  
   transposeMode = false;
