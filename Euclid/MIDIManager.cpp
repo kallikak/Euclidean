@@ -220,9 +220,10 @@ int getBPM()
 void handleClock()
 {
 #if DEBUG_SERIAL    
-  Serial.println("MIDI clock");
+  Serial.print("MIDI clock: ");
 #endif     
   clockCount++;
+//  DBG(clockCount);
   samples++;
   unsigned long thisbeattime = micros();
   if (lastbeattime > 0 && thisbeattime > lastbeattime)
@@ -261,7 +262,9 @@ void handleClock()
         lastupdatebpm = rbpm;
       }
     }
-//    Serial.println("Fire");
+#if DEBUG_SERIAL    
+    Serial.println("Fire");
+#endif     
     extClockFire();
   }
   lastbeattime = thisbeattime;
@@ -275,7 +278,7 @@ void handleStart()
   lastbeattime = 0;
   lastupdatebpm = 0;
   bpm = 0;
-  clockCount = 0;
+  clockCount = -1;
   samples = 0;
   buttonPressed(RUN, 1);
 }
@@ -310,39 +313,29 @@ void resetMIDI()
 
 void setupMIDI()
 {
-  DBG(useMIDIClock)
+//  DBG(useMIDIClock)
   MIDI.begin(MIDI_CHANNEL_OMNI);   
   MIDI.setHandleNoteOn(handleNoteOn);
   MIDI.setHandleNoteOff(handleNoteOff);
-  if (useMIDIClock)
-  {
-    MIDI.setHandleClock(handleClock);
-    MIDI.setHandleStart(handleStart);
-    MIDI.setHandleContinue(handleContinue);
-    MIDI.setHandleStop(handleStop);
-  }
+  MIDI.setHandleClock(handleClock);
+  MIDI.setHandleStart(handleStart);
+  MIDI.setHandleContinue(handleContinue);
+  MIDI.setHandleStop(handleStop);
   
   usbHost.begin();
   usbmidi.setHandleNoteOn(handleNoteOn);
   usbmidi.setHandleNoteOff(handleNoteOff);
-  if (useMIDIClock)
-  {
-    usbMIDI.setHandleClock(handleClock);
-    usbmidi.setHandleClock(handleClock);
-    usbmidi.setHandleStart(handleStart);
-    usbmidi.setHandleContinue(handleContinue);
-    usbmidi.setHandleStop(handleStop);
-  }
+  usbmidi.setHandleClock(handleClock);
+  usbmidi.setHandleStart(handleStart);
+  usbmidi.setHandleContinue(handleContinue);
+  usbmidi.setHandleStop(handleStop);
   
   usbMIDI.setHandleNoteOn(handleNoteOn);
   usbMIDI.setHandleNoteOff(handleNoteOff);
-  if (useMIDIClock)
-  {
-    usbMIDI.setHandleClock(handleClock);
-    usbMIDI.setHandleStart(handleStart);
-    usbMIDI.setHandleContinue(handleContinue);
-    usbMIDI.setHandleStop(handleStop);
-  }
+  usbMIDI.setHandleClock(handleClock);
+  usbMIDI.setHandleStart(handleStart);
+  usbMIDI.setHandleContinue(handleContinue);
+  usbMIDI.setHandleStop(handleStop);
 }
 
 void checkMIDI()
@@ -359,6 +352,7 @@ void sendMIDINoteOn(byte note, byte vel, byte chan)
 {
   MIDI.sendNoteOn(note, vel, chan);
   usbmidi.sendNoteOn(note, vel, chan);
+  usbMIDI.sendNoteOn(note, vel, chan);
 #if DEBUG_SERIAL 
   Serial.print(count / 12.0);
   Serial.print(": Note on: ");
@@ -374,6 +368,7 @@ void sendMIDINoteOff(byte note, byte chan)
 {
   MIDI.sendNoteOff(note, 0, chan);
   usbmidi.sendNoteOff(note, 0, chan);
+  usbMIDI.sendNoteOff(note, 0, chan);
 #if DEBUG_SERIAL  
   Serial.print(count / 12.0);
   Serial.print(": Note off: ");
@@ -393,6 +388,10 @@ void stopAllMIDI()
   usbmidi.sendControlChange(123, 0, 2);
   usbmidi.sendControlChange(123, 0, 3);
   usbmidi.sendControlChange(123, 0, 4);
+  usbMIDI.sendControlChange(123, 0, 1);
+  usbMIDI.sendControlChange(123, 0, 2);
+  usbMIDI.sendControlChange(123, 0, 3);
+  usbMIDI.sendControlChange(123, 0, 4);
 #if DEBUG_SERIAL  
   Serial.println("All MIDI notes off");
 #endif  
@@ -410,6 +409,7 @@ void sendMIDIClock()
     return;
   MIDI.sendRealTime(midi::Clock);
   usbmidi.sendRealTime(usbmidi.Clock);
+  usbMIDI.sendRealTime(usbmidi.Clock);
 #if DEBUG_SERIAL  
   unsigned long now = micros();
   sum += (now - last);
@@ -431,6 +431,7 @@ void sendMIDIClockStart()
     return;
   MIDI.sendRealTime(midi::Start);
   usbmidi.sendRealTime(usbmidi.Start);
+  usbMIDI.sendRealTime(usbmidi.Start);
 #if DEBUG_SERIAL  
   Serial.print("MIDI clock start ");
   last = micros();
@@ -445,6 +446,7 @@ void sendMIDIClockContinue()
     return;
   MIDI.sendRealTime(midi::Continue);
   usbmidi.sendRealTime(usbmidi.Continue);
+  usbMIDI.sendRealTime(usbmidi.Continue);
 }
 
 void sendMIDIClockStop()
@@ -453,4 +455,5 @@ void sendMIDIClockStop()
     return;
   MIDI.sendRealTime(midi::Stop);
   usbmidi.sendRealTime(usbmidi.Stop);
+  usbMIDI.sendRealTime(usbmidi.Stop);
 }

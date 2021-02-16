@@ -1613,7 +1613,6 @@ void checkPots(int potindex, bool setOnly, bool avgOnly, unsigned long now)
       }
       else
         adjv = v;
-      
       if (useMIDIClock && p->value == BLOCK_TEMPO_UPDATE)
       {
         Serial.println("Blocking initial tempo update when externally clocked");
