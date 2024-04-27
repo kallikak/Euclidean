@@ -1,11 +1,12 @@
-#include <SD_t3.h>
+//#include <SD_t3.h>
 #include <strings.h>
+#include "SD.h"
 
 #include "Config.h"
 #include "Controls.h"
 #include "Presets.h"
 #include "LCD.h"
-#include "drum_defs.h"
+#include "drum_samples.h"
 
 //Teensy Audio Shield 4.0 SD card pins
 #define SDCARD_CS_PIN    10
@@ -41,7 +42,7 @@ euclid_config preset0 = {
     {{0, 13, 4, -8}, false, true, {true, false, true}, false}
   },
   {84, {4, 13, 0}, {2, 5, 0}, {3, 7, 0}},  // rhythm
-  {BT_OFF, BT_OFF, {100, 101, 102, 103}}  // drums
+  {BT_OFF, BT_OFF, {100, 101, 102, 103}, "Default"}  // drums
 };
 
 // Pluck
@@ -61,7 +62,7 @@ euclid_config preset1 = {
     {{0, 7, -5, 7}, true, false, {true, true, true}, false}
   },
   {85, {1, 4, 0}, {2, 5, 0}, {4, 7, 0}},  // rhythm
-  {BT_OFF, BT_OFF, {100, 101, 102, 103}}  // drums
+  {BT_OFF, BT_OFF, {100, 101, 102, 103}, "Default"}  // drums
 };
 
 // SciFi
@@ -81,7 +82,7 @@ euclid_config preset2 = {
     {{0, 13, 4, -8}, true, true, {false, true, true}, false}
   },
   {96, {7, 16, 0}, {9, 16, 0}, {8, 16, 0}},  // rhythm
-  {BT_OFF, BT_OFF, {100, 101, 103, 102}}  // drums
+  {BT_OFF, BT_OFF, {100, 101, 103, 102}, "Default"}  // drums
 };
 
 // Meditation
@@ -98,10 +99,10 @@ euclid_config preset3 = {
   {DELAY, BYPASS, BYPASS, SLOW},       // effect
   {    // sequencers
     {{0, 3, 6, 9}, true, false, {true, true, true}, false}, 
-    {{-5, -9, -13, -17}, false, true, {true, false, false}, true}
+    {{-5, -9, -13, -16}, false, true, {true, false, false}, true}
   },
   {2, {5, 13, 0}, {1, 6, 0}, {1, 11, 0}},  // rhythm
-  {BT_OFF, BT_OFF, {100, 101, 103, 102}}  // drums
+  {BT_OFF, BT_OFF, {100, 101, 103, 102}, "Default"}  // drums
 };
 
 // Echo
@@ -118,10 +119,10 @@ euclid_config preset4 = {
   {DELAY, BYPASS, BYPASS, SLOW},       // effect
   {    // sequencers
     {{8, 0, -5, 5}, true, true, {true, false, true}, false}, 
-    {{0, 6, 9, 24}, true, true, {false, true, true}, false}
+    {{0, 6, 9, 12}, true, true, {false, true, true}, false}
   },
   {91, {5, 12, 0}, {4, 12, 0}, {3, 12, 0}},  // rhythm
-  {BT_OFF, BT_OFF, {100, 101, 103, 102}}  // drums
+  {BT_OFF, BT_OFF, {100, 101, 103, 102}, "Default"}  // drums
 };
 
 // Funk
@@ -141,7 +142,7 @@ euclid_config preset5 = {
     {{0, -8, 9, -6}, false, true, {false, true, false}, false}
   },
   {97, {2, 5, 0}, {3, 8, 0}, {3, 7, 0}},  // rhythm
-  {BT_OFF, BT_OFF, {100, 101, 103, 102}}  // drums
+  {BT_OFF, BT_OFF, {100, 101, 103, 102}, "Default"}  // drums
 };
 
 // Dance
@@ -158,10 +159,10 @@ euclid_config preset6 = {
   {NONE, BYPASS, BYPASS, BYPASS},       // effect
   {    // sequencers
     {{0, 5, 0, -5}, true, true, {true, false, false}, false}, 
-    {{12, 8, -9, -24}, true, true, {false, false, false}, true}
+    {{12, 8, -9, -12}, true, true, {false, false, false}, true}
   },
   {95, {4, 16, 0}, {5, 17, 1}, {3, 15, 4}},  // rhythm
-  {BT_ALL, BT_ONE, {100, 101, 106, 102}}  // drums
+  {BT_ALL, BT_ONE, {100, 101, 106, 102}, "TR-909"}  // drums
 };
 
 // Stroll
@@ -181,7 +182,7 @@ euclid_config preset7 = {
     {{12, -9, -12, -9}, true, true, {true, true, true}, false}
   },
   {84, {4, 32, 0}, {5, 29, 3}, {3, 31, 7}},  // rhythm
-  {BT_ALL, BT_ONE, {100, 100, 100, 102}}  // drums
+  {BT_ALL, BT_ONE, {100, 100, 100, 102}, "Default"}  // drums
 };
 
 // Flap
@@ -198,10 +199,10 @@ euclid_config preset8 = {
   {DELAY, BYPASS, BYPASS, SLOW},       // effect
   {    // sequencers
     {{-9, -6, 9, 14}, true, true, {true, false, false}, false}, 
-    {{11, 9, 16, -18}, true, true, {false, true, false}, true}
+    {{11, 9, 16, -6}, true, true, {false, true, false}, true}
   },
   {99, {4, 16, 0}, {5, 15, 2}, {3, 16, 3}},  // rhythm
-  {BT_SEL, BT_SEL, {100, 101, 106, 102}}  // drums
+  {BT_SEL, BT_SEL, {100, 101, 106, 102}, "Default"}  // drums
 };
 
 // Bells
@@ -218,10 +219,10 @@ euclid_config preset9 = {
   {DELAY, BYPASS, BYPASS, FAST},       // effect
   {    // sequencers
     {{0, 5, 0, -5}, true, true, {true, false, true}, false}, 
-    {{13, 8, -6, -24}, true, true, {false, true, true}, false}
+    {{13, 8, -6, -12}, true, true, {false, true, true}, false}
   },
   {47, {4, 14, 0}, {5, 15, 1}, {3, 17, 3}},  // rhythm
-  {BT_ALL, BT_ONE, {100, 101, 101, 102}}  // drums
+  {BT_ALL, BT_ONE, {100, 101, 101, 102}, "Default"}  // drums
 };
 
 euclid_config default_presets[] = {
@@ -250,7 +251,9 @@ int nextPreset(int i)
     return SET_MANUAL; // indicates "set to manual" option
   if (i == SET_MANUAL)
     return SET_DEFAULT; // indicates "default" option
-  else if (i == SET_DEFAULT)
+  if (i == SET_DEFAULT)
+    return CHOOSE_KIT; // indicates "default" option
+  else if (i == CHOOSE_KIT)
     return nextPreset(-1);
   int j = i;
   while (++j < MAX_PRESETS)
@@ -263,12 +266,14 @@ int nextPreset(int i)
 
 int prevPreset(int i)
 {
+  if (i == CHOOSE_KIT)
+    return SET_DEFAULT; // indicates "set to manual" option
   if (i == SET_DEFAULT)
     return SET_MANUAL; // indicates "set to manual" option
   else if (i == SET_MANUAL)
     return MAX_PRESETS; // indicates "save new preset" option
   else if (i == 0)
-    return SET_DEFAULT; // indicates "default" option
+    return CHOOSE_KIT; // indicates "default" option
   int j = i;
   while (--j >= 0)
   {
@@ -391,18 +396,18 @@ bool isValidPresetFile(File f)
 {
   if (f.isDirectory())
     return false;
-  char *fname = f.name();
+  const char *fname = f.name();
   return (strlen(fname) == 2) && 
     isdigit(fname[0]) && 
     isdigit(fname[1]);
 }
 
-bool isTempFile(char *fname)
+bool isTempFile(const char *fname)
 {
-  fname = strrchr(fname, '.');
+  char *fname2 = strrchr(fname, '.');
 
-  if (fname)
-    return strcmp(fname, ".tmp") == 0;
+  if (fname2)
+    return strcmp(fname2, ".tmp") == 0;
 
   return false;
 }
@@ -632,6 +637,8 @@ bool saveConfigData(File file, config_ptr cfg)
   sprintf(line, "%d,%d,%d,%d,%d,%d", d.beatstate, d.offbeatstate, d.beats[0], d.beats[1], d.beats[2], d.beats[3]);
   file.println(line);
   Serial.println(line);
+  file.print(d.sampleset ? d.sampleset : "Default");
+  Serial.print(d.sampleset ? d.sampleset : "Default");
   return true;
 }
 
@@ -785,7 +792,7 @@ bool loadConfigData(File file, config_ptr cfg)
       return false;
     }
     for (k = 0; k < 4; ++k)
-      s->steps[k] = intRange(bits[k], -24, 24);
+      s->steps[k] = intRange(bits[k], -MAX_STEP, MAX_STEP);
     s->applyOsc = bits[4] ? true : false;
     s->applySub = bits[5] ? true : false;
     for (k = 0; k < 3; ++k)
@@ -824,6 +831,11 @@ bool loadConfigData(File file, config_ptr cfg)
   d->beats[1] = intRange(bits[3], 0, DK_LAST);
   d->beats[2] = intRange(bits[4], 0, DK_LAST);
   d->beats[3] = intRange(bits[5], 0, DK_LAST);
+
+  // sample set is text
+  strncpy(d->sampleset, file.readString().c_str(), MAX_SAMPLESET_NAME_LENGTH);
+  if (strlen(d->sampleset) == 0)
+    strcpy(d->sampleset, "Default");
 
   return true;
 }

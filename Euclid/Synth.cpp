@@ -1,3 +1,4 @@
+#include "effect_ensemble.h"
 #include <Audio.h>
 
 #include <Arduino.h>

@@ -1,156 +1,547 @@
-// Audio data converted from WAV file by wav2sketch
+/*
+  TODO:
+    - Add the sample name to the config file
+    - Deal better with missing/invalid data
+ */
 
-#include "drum_defs.h"
+#include "stdlib.h"
+#include "stdio.h"
+
+#include "SD.h"
+#include "Utility.h"
+
 #include "drum_samples.h"
 
-// for easier volume adjustment
-float getVolumeFactor(int type)
+// default ids
+#define DK_BASS       100
+#define DK_SNARE      101
+#define DK_HAT_C      102
+#define DK_HAT_O      103
+#define DK_TOM_L      104
+#define DK_TOM_M      105
+#define DK_TOM_H      106
+#define DK_CLAVES			107
+#define DK_CONGA_L		108
+#define DK_CONGA_M		109
+#define DK_CONGA_H    110
+#define DK_CYMBAL     111
+#define DK_RIDECYMBAL 112
+#define DK_RIMSHOT    113
+#define DK_MARACAS    114
+
+#define NUM_DEFAULT_SAMPLES    15
+
+// default kits
+int numKits = 13;
+drumKit *kits;
+int numSamples = NUM_DEFAULT_SAMPLES;
+int DK_LAST = DK_BASS + numSamples - 1;
+
+#define NOSAMPLE (unsigned int *)0
+
+unsigned int *drumSample1 = NOSAMPLE;
+unsigned int *drumSample2 = NOSAMPLE;
+unsigned int *drumSample3 = NOSAMPLE;
+unsigned int *drumSample4 = NOSAMPLE;
+
+bool isdefault[] = { true, true, true, true };
+
+static char tempstr[50] = {0};
+extern bool cardAvailable;
+
+typedef char Str50[51];
+
+Str50 *setNames;
+int nSampleSets = 0;
+
+int sampleSet = 0;
+
+typedef struct {
+  int id;
+  char fname[51];
+  char desc[16];
+  char shortdesc[4];
+} sampleinfo;
+
+static sampleinfo *info = NULL;
+
+bool makeDefaultKits()
 {
-  switch (type)
+  if (kits)
+    free(kits);
+  numKits = 13;
+  kits = (drumKit *)calloc(numKits, sizeof(drumKit));
+  if (!kits)
+    return false;
+  int k = 0;
+  kits[k++] = {DK_BASS, DK_SNARE, DK_TOM_H, DK_HAT_C};
+  kits[k++] = {DK_BASS, DK_SNARE, DK_HAT_O, DK_HAT_C}; 
+  kits[k++] = {DK_BASS, DK_SNARE, DK_CYMBAL, DK_HAT_C}; 
+  kits[k++] = {DK_BASS, DK_SNARE, DK_HAT_C, DK_RIDECYMBAL};  
+  kits[k++] = {DK_BASS, DK_SNARE, DK_HAT_C, DK_HAT_O}; 
+  kits[k++] = {DK_BASS, DK_SNARE, DK_SNARE, DK_HAT_C}; 
+  kits[k++] = {DK_TOM_L, DK_TOM_M, DK_TOM_H, DK_HAT_C}; 
+  kits[k++] = {DK_TOM_L, DK_TOM_M, DK_TOM_H, DK_CLAVES};
+  kits[k++] = {DK_BASS, DK_BASS, DK_BASS, DK_HAT_O};
+  kits[k++] = {DK_SNARE, DK_SNARE, DK_SNARE, DK_HAT_O};
+  kits[k++] = {DK_SNARE, DK_SNARE, DK_RIMSHOT, DK_HAT_O};
+  kits[k++] = {DK_CONGA_L, DK_CONGA_M, DK_CONGA_H, DK_HAT_C};
+  kits[k++] = {DK_CONGA_L, DK_CONGA_M, DK_CONGA_H, DK_CLAVES};
+
+  return true;
+}
+
+int getId(const char *name)
+{
+  for (int i = 0; i < numSamples; ++i)
+    if (strcmp(info[i].fname, name) == 0)
+      return DK_FIRST + i;
+  return DK_OFF;
+}
+
+char *trim(char *str)
+{
+  char *end;
+
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
+
+  if (*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while (end > str && isspace((unsigned char)*end)) 
+    end--;
+
+  // Write new null terminator character
+  end[1] = '\0';
+
+  return str;
+}
+
+bool parseDescription(char *setname, char *desc)
+{
+  int k = 0;
+  while (*desc++ != ':')
   {
-#ifdef DK_BASS
-    case DK_BASS:
-      return 1.0;
-#endif
-#ifdef DK_CLAP
-    case DK_CLAP:
-      return 1.0;
-#endif
-#ifdef DK_CLAVES
-    case DK_CLAVES:
-      return 0.5;
-#endif
-#ifdef DK_CONGA_H
-    case DK_CONGA_H:
-      return 1.0;
-#endif
-#ifdef DK_CONGA_L
-    case DK_CONGA_L:
-      return 1.0;
-#endif
-#ifdef DK_CONGA_M
-    case DK_CONGA_M:
-      return 1.0;
-#endif
-#ifdef DK_CYMBAL
-    case DK_CYMBAL:
-      return 1.0;
-#endif
-#ifdef DK_HAT_C
-    case DK_HAT_C:
-      return 1.0;
-#endif
-#ifdef DK_HAT_O
-    case DK_HAT_O:
-      return 1.0;
-#endif
-#ifdef DK_MARACAS
-    case DK_MARACAS:
-      return 1.0;
-#endif
-#ifdef DK_RIDECYMBAL
-    case DK_RIDECYMBAL:
-      return 1.0;
-#endif
-#ifdef DK_RIMSHOT
-    case DK_RIMSHOT:
-      return 1.0;
-#endif
-#ifdef DK_SNARE
-    case DK_SNARE:
-      return 1.0;
-#endif
-#ifdef DK_TOM_H
-    case DK_TOM_H:
-      return 1.5;
-#endif
-#ifdef DK_TOM_L
-    case DK_TOM_L:
-      return 1.5;
-#endif      
-#ifdef DK_TOM_M
-    case DK_TOM_M:
-      return 1.5;
-#endif      
-    default:
-      return 1.0;
+    if (!desc)
+    {
+      Serial.printf("Missing number of samples header in description file for sample set: %s\n", setname);
+      return false;
+    }
   }
+  numSamples = (int)atol(desc);
+  DBG(numSamples)
+  DK_LAST = DK_BASS + numSamples - 1;
+  desc = strchr(desc, '\n');
+
+  if (info)
+    free(info);
+  info = (sampleinfo *)calloc(numSamples, sizeof(sampleinfo));
+  if (!info)
+    return false;
+  
+  bool loadinginfo = true;
+  bool loadingkits = false;
+
+  char *saveline;
+  char *line = strtok_r(desc, "\n", &saveline);
+  while (line)
+  {
+    if (line[0] == '#' || line[0] == '\n')
+      continue;
+    char *savetoken;
+    char *token = strtok_r(line, ",", &savetoken);
+    if (loadinginfo)
+    {
+      int n = strlen("Kits:");
+      if (strncmp("Kits:", token, n) == 0)
+      {
+        loadingkits = true;
+        loadinginfo = false;
+        numKits = (int)atol(token + n);
+        DBG(numKits)
+        if (kits)
+          free(kits);
+        kits = (drumKit *)calloc(numKits, sizeof(drumKit));
+        if (!kits)
+        {
+          Serial.printf("kit allocation failed\n");
+          free(info);
+          return false;
+        }
+        k = 0;
+      }
+      else
+      {
+        char *desc = strtok_r(NULL, ",", &savetoken);
+        char *shortdesc = strtok_r(NULL, ",", &savetoken);
+        sampleinfo entry = { DK_FIRST + k };
+        if (!desc || !shortdesc)
+        {
+          Serial.printf("Invalid description file for sample set: %s\n", setname);
+          return false;
+        }
+        strncpy(entry.fname, trim(token), 50);
+        strncpy(entry.desc, trim(desc), 15);
+        strncpy(entry.shortdesc, trim(shortdesc), 3);
+        info[k++] = entry;
+        DBGn(k)DBG(entry.fname)
+      }
+    }
+    else if (loadingkits)
+    {
+      char *beat2 = strtok_r(NULL, ",", &savetoken);
+      char *beat3 = strtok_r(NULL, ",", &savetoken);
+      char *offbeat = strtok_r(NULL, ",", &savetoken);
+      if (!beat2 || !beat3 || !offbeat)
+      {
+        Serial.printf("Improper kit definition in sample set: %s\n", setname);
+        free(info);
+        free(kits);
+        return false;
+      }
+      kits[k].beats[0] = getId(trim(token));
+      kits[k].beats[1] = getId(trim(beat2));
+      kits[k].beats[2] = getId(trim(beat3));
+      kits[k++].beats[3] = getId(trim(offbeat));
+      DBG(k)
+    }
+    line = strtok_r(NULL, "\n", &saveline);
+  }
+  MSG("done")
+  return true;
+}
+
+// char *defdesc =
+//   "# Standard sample set description file\n"
+//   "\n"
+//   "Samples:15\n"
+//   "\n"
+//   "BASS,Bass,Bs\n"
+//   "SNARE,Snare,Sn\n"
+//   "HAT_C,Hi-hat,HH\n"
+//   "HAT_O,Open Hi-hat,OH\n"
+//   "TOM_L,Low Tom,LT\n"
+//   "TOM_M,Med Tom,MT\n"
+//   "TOM_H,High Tom,HT\n"
+//   "CLAVES,Claves,Clv\n"
+//   "CONGA_L,Low Conga,LC\n"
+//   "CONGA_M,Med Conga,MC\n"
+//   "CONGA_H,High Conga,HC\n"
+//   "CYMBAL,Cymbal,Cy\n"
+//   "RIDE,Ride Cymbal,Rd\n"
+//   "RIM,Rimshot,Rim\n"
+//   "MARACAS,Maracas,Mar\n"
+//   "\n"
+//   "Kits:13\n"
+//   "\n"
+//   "BASS,SNARE,TOM_H,HAT_C\n"
+//   "BASS,SNARE,HAT_O,HAT_C\n"
+//   "BASS,SNARE,CYMBAL,HAT_C \n"
+//   "BASS,SNARE,HAT_C,RIDE\n"
+//   "BASS,SNARE,HAT_C,HAT_O\n"
+//   "BASS,SNARE,SNARE,HAT_C \n"
+//   "TOM_L,TOM_M,TOM_H,HAT_C \n"
+//   "TOM_L,TOM_M,TOM_H,CLAVES\n"
+//   "BASS,BASS,BASS,HAT_O\n"
+//   "SNARE,SNARE,SNARE,HAT_O\n"
+//   "SNARE,SNARE,RIM,HAT_O\n"
+//   "CONGA_L,CONGA_M,CONGA_H,HAT_C\n"
+//   "CONGA_L,CONGA_M,CONGA_H,CLAVES\n";
+
+bool loadSampleDesc(int sampleSet)
+{
+  if (sampleSet < 0 || sampleSet >= nSampleSets)
+  {
+    if (!makeDefaultKits())
+      return false;
+    if (info)
+    {
+      free(info);
+      info = NULL;
+    }
+
+    numSamples = NUM_DEFAULT_SAMPLES;
+    DK_LAST = DK_BASS + numSamples - 1;
+
+    return true;
+  }
+
+  char *setname = setNames[sampleSet];
+
+  sprintf(tempstr, "/Samples/%s", setname);
+  if (!SD.exists(tempstr))
+  {
+    Serial.print("No description file for sample set: ");
+    Serial.println(setname);
+    return false;
+  }
+  sprintf(tempstr, "/Samples/%s/desc.txt", setname);  
+  File sampledesc = SD.open(tempstr, FILE_READ);
+
+  char *desc = (char *)calloc(sampledesc.size() + 1, sizeof(char));
+  if (!desc)
+    return false;
+  char *save = desc;
+
+  while (sampledesc.available())
+    *desc++ = sampledesc.read();
+
+  MSG("Loaded sample description")
+  
+  bool result = parseDescription(setname, save);
+  free(save);
+
+  return result;
 }
 
 const char *getInstrumentDesc(int type, bool shortDesc)
 {
-  switch (type)
+  if (info)
   {
-#ifdef DK_BASS
-    case DK_BASS:
-      return shortDesc ? "Bs" : "Bass";
-#endif
-#ifdef DK_CLAP
-    case DK_CLAP:
-      return shortDesc ? "Clp" : "Clap";
-#endif
-#ifdef DK_CLAVES
-    case DK_CLAVES:
-      return shortDesc ? "Clv" : "Claves";
-#endif
-#ifdef DK_CONGA_H
-    case DK_CONGA_H:
-      return shortDesc ? "HC" : "High Conga";
-#endif
-#ifdef DK_CONGA_L
-    case DK_CONGA_L:
-      return shortDesc ? "LC" : "Low Conga";
-#endif
-#ifdef DK_CONGA_M
-    case DK_CONGA_M:
-      return shortDesc ? "MC" : "Med Conga";
-#endif
-#ifdef DK_CYMBAL
-    case DK_CYMBAL:
-      return shortDesc ? "Cy" : "Cymbal";
-#endif
-#ifdef DK_HAT_C
-    case DK_HAT_C:
-      return shortDesc ? "HH" : "Hi-hat";
-#endif
-#ifdef DK_HAT_O
-    case DK_HAT_O:
-      return shortDesc ? "OH" : "Open Hi-hat";
-#endif
-#ifdef DK_MARACAS
-    case DK_MARACAS:
-      return shortDesc ? "Mar" : "Maracas";
-#endif
-#ifdef DK_RIDECYMBAL
-    case DK_RIDECYMBAL:
-      return shortDesc ? "Rd" : "Ride Cymbal";
-#endif
-#ifdef DK_RIMSHOT
-    case DK_RIMSHOT:
-      return shortDesc ? "Rim" : "Rimshot";
-#endif
-#ifdef DK_SNARE
-    case DK_SNARE:
-      return shortDesc ? "Sn" : "Snare";
-#endif
-#ifdef DK_TOM_H
-    case DK_TOM_H:
-      return shortDesc ? "HT" : "High Tom";
-#endif
-#ifdef DK_TOM_L
-    case DK_TOM_L:
-      return shortDesc ? "LT" : "Low Tom";
-#endif      
-#ifdef DK_TOM_M
-    case DK_TOM_M:
-      return shortDesc ? "MT" : "Med Tom";
-#endif      
-    default:
+    if (type < DK_FIRST || type > DK_LAST)
       return "None";
+    int k = type - DK_FIRST;
+    return shortDesc ? info[k].shortdesc : info[k].desc;
+  }
+  else
+  {
+    switch (type)
+    {
+      case DK_BASS:
+        return shortDesc ? "Bs" : "Bass";
+      case DK_CLAVES:
+        return shortDesc ? "Clv" : "Claves";
+      case DK_CONGA_H:
+        return shortDesc ? "HC" : "High Conga";
+      case DK_CONGA_L:
+        return shortDesc ? "LC" : "Low Conga";
+      case DK_CONGA_M:
+        return shortDesc ? "MC" : "Med Conga";
+      case DK_CYMBAL:
+        return shortDesc ? "Cy" : "Cymbal";
+      case DK_HAT_C:
+        return shortDesc ? "HH" : "Hi-hat";
+      case DK_HAT_O:
+        return shortDesc ? "OH" : "Open Hi-hat";
+      case DK_MARACAS:
+        return shortDesc ? "Mar" : "Maracas";
+      case DK_RIDECYMBAL:
+        return shortDesc ? "Rd" : "Ride Cymbal";
+      case DK_RIMSHOT:
+        return shortDesc ? "Rim" : "Rimshot";
+      case DK_SNARE:
+        return shortDesc ? "Sn" : "Snare";
+      case DK_TOM_H:
+        return shortDesc ? "HT" : "High Tom";
+      case DK_TOM_L:
+        return shortDesc ? "LT" : "Low Tom";
+      case DK_TOM_M:
+        return shortDesc ? "MT" : "Med Tom";
+      default:
+        return "None";
+    }
   }
 }
 
-#ifdef DK_BASS
+int getNumSampleSets()
+{
+  return nSampleSets;
+}
+
+char *getSetName(int k)
+{
+  if (k < 0 || k >= nSampleSets)
+    return (char *)"Default";
+  if (k < nSampleSets)
+    return setNames[k];
+  else
+    return (char *)"";
+}
+
+void loadSampleSet(char *samplesetname)
+{
+  int k = -1;
+  bool found = false;
+  while (k < nSampleSets)
+  {
+    if (strncmp(samplesetname, getSetName(k), MAX_SAMPLESET_NAME_LENGTH) == 0)
+    {
+      sampleSet = k;
+      loadSampleDesc(sampleSet);
+      found = true;
+      break;
+    }
+    k++;
+  }
+  if (!found)
+    loadSampleDesc(-1); // defaults
+
+  needsKitUpdate = true;
+}
+
+void initSamples()
+{
+  if (cardAvailable)
+  {
+    File sampleFolder = SD.open("/Samples");
+    nSampleSets = 0;
+    while (true)
+    {
+      File set =  sampleFolder.openNextFile();
+      if (!set)
+        break;
+      if (set.isDirectory())
+      {
+        const char *name = set.name();
+        sprintf(tempstr, "/Samples/%s/desc.txt", name);
+        if (SD.exists(tempstr))
+          nSampleSets++;
+      }
+    }
+    setNames = (Str50 *)calloc(nSampleSets, sizeof(Str50));
+    unsigned int k = 0;
+    sampleFolder = SD.open("/Samples");
+    while (true)
+    {
+      File set =  sampleFolder.openNextFile();
+      if (!set)
+        break;
+      if (set.isDirectory())
+      {
+        const char *name = set.name();
+        sprintf(tempstr, "/Samples/%s/desc.txt", name);
+        if (SD.exists(tempstr))
+        {
+          Serial.println(name);
+          if (strlen(name) <= 50)
+            strcpy(setNames[k++], name);
+        }
+      }
+    }
+  }
+  sampleSet = -1; // indicates inbuilt default samples
+  makeDefaultKits();
+}
+
+const unsigned int *getDefaultSample(int sample)
+{
+  switch (sample)
+  {
+    case DK_BASS: return DK_BASS_ARRAY;
+    case DK_HAT_C: return DK_HAT_C_ARRAY;
+    case DK_HAT_O: return DK_HAT_O_ARRAY;
+    case DK_SNARE: return DK_SNARE_ARRAY;
+    case DK_TOM_L: return DK_TOM_L_ARRAY;
+    case DK_TOM_M: return DK_TOM_M_ARRAY;
+    case DK_TOM_H: return DK_TOM_H_ARRAY;
+    case DK_CLAVES: return DK_CLAVES_ARRAY;
+    case DK_CONGA_H: return DK_CONGA_H_ARRAY;
+    case DK_CONGA_L: return DK_CONGA_L_ARRAY;
+    case DK_CONGA_M: return DK_CONGA_M_ARRAY;
+    case DK_CYMBAL: return DK_CYMBAL_ARRAY;
+    case DK_MARACAS: return DK_MARACAS_ARRAY;
+    case DK_RIMSHOT: return DK_RIMSHOT_ARRAY;
+    case DK_RIDECYMBAL: return DK_RIDECYMBAL_ARRAY;
+    case DK_OFF:
+    default:
+      return NOSAMPLE;
+  }
+}
+
+#define BR_44K 0x83
+#define BR_22K 0x82
+#define BR_11K 0x81
+unsigned int *getSample(int s, unsigned int *buffer, int bufidx)
+{
+  if (s < DK_FIRST || s > DK_LAST)
+    return NOSAMPLE;
+
+  if (!cardAvailable || sampleSet < 0 || sampleSet >= nSampleSets)
+  {
+    isdefault[bufidx] = true;
+    return (unsigned int *)getDefaultSample(s);
+  }
+
+  const char *samplename = info[s - DK_FIRST].fname;
+  unsigned char rawformat = 0;
+
+  sprintf(tempstr, "/Samples/%s/%s.ulw", getSetName(sampleSet), samplename);
+  if (SD.exists(tempstr))
+    goto found;
+  sprintf(tempstr, "/Samples/%s/%s.r11", getSetName(sampleSet), samplename);
+  if (SD.exists(tempstr))
+  {
+    rawformat = BR_11K;
+    goto found;
+  }
+  sprintf(tempstr, "/Samples/%s/%s.r22", getSetName(sampleSet), samplename);
+  if (SD.exists(tempstr))
+  {
+    rawformat = BR_22K;
+    goto found;
+  }
+  sprintf(tempstr, "/Samples/%s/%s.r44", getSetName(sampleSet), samplename);
+  if (SD.exists(tempstr))
+  {
+    rawformat = BR_44K;
+    goto found;
+  }
+  sprintf(tempstr, "/Samples/%s/%s.raw", getSetName(sampleSet), samplename);
+  if (SD.exists(tempstr))
+  {
+    rawformat = BR_44K;
+    goto found;
+  }
+  return NOSAMPLE;
+
+found:
+  File sample = SD.open(tempstr, FILE_READ);
+
+  size_t nbytes = sample.size();
+  if (!isdefault[bufidx] && buffer)
+    free(buffer);
+  isdefault[bufidx] = false;    
+  buffer = (unsigned int *)calloc(nbytes + 4, sizeof(byte));
+  if (buffer)
+  {
+    sample.read(rawformat ? &buffer[1] : buffer, nbytes);
+    if (rawformat)
+    {
+      uint32_t header = (rawformat << 24) + nbytes; // patch in the header
+      buffer[0] = header;
+    }
+  }
+  sample.close();
+  return buffer;
+}
+
+void updateSamples(int s1, int s2, int s3, int s4)
+{
+  if (s1 != DK_OFF)
+  {
+    drumSample1 = getSample(s1, drumSample1, 0);
+    if (drumSample1 == NOSAMPLE) Serial.printf("Failed to load %d [%s]\n", s1, info[s1 - DK_FIRST].fname);
+  }
+  if (s2 != DK_OFF) 
+  {
+    drumSample2 = getSample(s2, drumSample2, 1); 
+    if (drumSample2 == NOSAMPLE) Serial.printf("Failed to load %d [%s]\n", s2, info[s2 - DK_FIRST].fname);
+  }
+  if (s3 != DK_OFF)
+  {
+    drumSample3 = getSample(s3, drumSample3, 2); 
+    if (drumSample3 == NOSAMPLE) Serial.printf("Failed to load %d [%s]\n", s3, info[s3 - DK_FIRST].fname);
+  }
+  if (s4 != DK_OFF)
+  {
+    drumSample4 = getSample(s4, drumSample4, 3); 
+    if (drumSample4 == NOSAMPLE) Serial.printf("Failed to load %d [%s]\n", s4, info[s4 - DK_FIRST].fname);
+  }
+}
+
 // Converted from 01-BassDrum.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleBassdrum[1249] = {
 0x01001337,0x06060606,0x29800606,0x4E4E4E48,0x46494D4E,0x31373E42,0x9E911425,0xB1AEA9A5,
@@ -311,9 +702,7 @@ const unsigned int AudioSampleBassdrum[1249] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_CLAP
 // Converted from Clap.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleClap[1345] = {
 0x01001493,0x00000000,0x00800080,0x80008000,0x00008000,0x00800000,0x00000080,0x00000000,
@@ -486,9 +875,7 @@ const unsigned int AudioSampleClap[1345] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_CLAVES
 // Converted from Claves.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleClaves[289] = {
 0x01000468,0x03810080,0x0F8A0784,0x53513095,0xBC1F4450,0xD7D7D3CC,0x83C1CFD4,0x56544E40,
@@ -529,9 +916,7 @@ const unsigned int AudioSampleClaves[289] = {
 0x100E0802,0x090E1011,0x8E898303,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_CONGA_H
 // Converted from HighConga.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleHighconga[737] = {
 0x01000B7E,0x80008000,0x80008000,0x00800000,0x0B810080,0x3A352E21,0x4342413F,0x43444443,
@@ -628,9 +1013,7 @@ const unsigned int AudioSampleHighconga[737] = {
 0x87888A8B,0x81838486,0x04020180,0x09080605,0x0E0D0C0A,0x1110100F,0x12121211,0x13131313,
 0x00001414,
 };
-#endif
 
-#ifdef DK_CONGA_L
 // Converted from LowConga.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleLowconga[1505] = {
 0x01001750,0x80008000,0x00008000,0x00800000,0x00800080,0x80008000,0x30271C0C,0x3F3C3934,
@@ -823,9 +1206,7 @@ const unsigned int AudioSampleLowconga[1505] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_CONGA_M
 // Converted from MedConga.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleMedconga[865] = {
 0x01000D64,0x00000000,0x00000080,0x80008000,0x00008000,0x80008000,0x80000000,0x332A1A03,
@@ -938,9 +1319,7 @@ const unsigned int AudioSampleMedconga[865] = {
 0x94949494,0x93939394,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_CYMBAL
 // Converted from Cymbal.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleCymbal[3041] = {
 0x01002F36,0x00000000,0x00800080,0x80008000,0x00000000,0x80008000,0x00000000,0x00800080,
@@ -1325,9 +1704,7 @@ const unsigned int AudioSampleCymbal[3041] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_HAT_C
 // Converted from ClosedHihat.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleClosedhihat[353] = {
 0x01000540,0x80008000,0x05830180,0x89A00F88,0x9096002E,0x33B8A927,0x018A972E,0x07828C89,
@@ -1376,9 +1753,7 @@ const unsigned int AudioSampleClosedhihat[353] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_HAT_O
 // Converted from OpenHihat.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleOpenhihat[1057] = {
 0x01001046,0x80008000,0x00800000,0x00000000,0x00800080,0x00000080,0x00000000,0x80838480,
@@ -1515,9 +1890,7 @@ const unsigned int AudioSampleOpenhihat[1057] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_MARACAS
 // Converted from Maracas.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleMaracas[129] = {
 0x010001E9,0x09818002,0x8D819104,0x848D180C,0x008F8B03,0x108C010F,0x8A910609,0x86030508,
@@ -1538,9 +1911,7 @@ const unsigned int AudioSampleMaracas[129] = {
 0x0906820D,0x8F08838E,0x82050D82,0x00000003,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_RIDECYMBAL
 // Converted from RideCymbal.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleRidecymbal[449] = {
 0x01000683,0x82818000,0x8A888684,0x0704838A,0x090A090A,0x06070809,0x938F8700,0x99989896,
@@ -1601,9 +1972,7 @@ const unsigned int AudioSampleRidecymbal[449] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_RIMSHOT
 // Converted from RimShot.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleRimshot[161] = {
 0x01000214,0x00000000,0x00800080,0x83028100,0xBAB1A305,0x19C2C3BF,0x26292327,0x2B2A282A,
@@ -1628,9 +1997,7 @@ const unsigned int AudioSampleRimshot[161] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_SNARE
 // Converted from Snare.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleSnare[609] = {
 0x0100096D,0x05840382,0xB9920A87,0xC0BFBDBB,0xC6C5C4C3,0xC5C3C5C6,0xCACAC9C7,0xC7CACBCA,
@@ -1711,9 +2078,7 @@ const unsigned int AudioSampleSnare[609] = {
 0x8B8D8D88,0x80818487,0x01010100,0x01000001,0x00000011,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_TOM_H
 // Converted from 14-TomTom_High-LV.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleTomtom_high_lv[3361] = {
 0x01003425,0x81008000,0x2F158502,0x3C3A3834,0x403F3E3D,0x40404040,0x3F3F3F3F,0x3F3F3F3F,
@@ -2138,9 +2503,7 @@ const unsigned int AudioSampleTomtom_high_lv[3361] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_TOM_L
 // Converted from 15-TomTom_Low-LV.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleTomtom_low_lv[5153] = {
 0x0100502E,0x81008000,0x30178602,0x3C3A3734,0x403F3E3D,0x41414140,0x42424141,0x43434242,
@@ -2789,9 +3152,7 @@ const unsigned int AudioSampleTomtom_low_lv[5153] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,
 };
-#endif
 
-#ifdef DK_TOM_M
 // Converted from 16-TomTom_Med-LV.wav, using 44100 Hz, u-law encoding
 const unsigned int AudioSampleTomtom_med_lv[3841] = {
 0x01003BF8,0x00800080,0x01800080,0x18120D05,0x2724221D,0x302E2C2A,0x33323131,0x35353433,
@@ -3276,4 +3637,3 @@ const unsigned int AudioSampleTomtom_med_lv[3841] = {
 0x01010102,0x01020101,0x01010101,0x00010001,0x00000001,0x80000000,0x80808080,0x00000000,
 0x00000000,
 };
-#endif

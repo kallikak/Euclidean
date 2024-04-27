@@ -6,7 +6,7 @@
 #include <ADC.h>
 #endif
 
-#include "Adafruit_MCP23017.h"
+#include "Adafruit_MCP23X17.h"
 #include "Rotary.h"
 #include <Bounce2mcp.h>
 #include "LCD.h"
@@ -18,6 +18,7 @@
 #include "Presets.h"
 #include "Controls.h"
 #include "MIDIManager.h"
+#include "drum_samples.h"
 #include "Drums.h"
 
 #if USE_ADC_LIB
@@ -52,6 +53,7 @@ void shiftflashcallback()
 int preset = SET_DEFAULT;
 bool enablePresetButton = false;  // must have been turned first
 bool saveNewPresetSelected = false;
+bool choosingKit = false;
 int lastupdatemillis = 0;
 int activemeter = 0;
 
@@ -76,7 +78,7 @@ bool demoMode = false;
   
 static char tempstr[50] = {0};
 
-Adafruit_MCP23017 *expanders[] = {NULL, NULL, NULL, NULL};
+Adafruit_MCP23X17 *expanders[] = {NULL, NULL, NULL, NULL};
 
 typedef struct
 {
@@ -201,8 +203,8 @@ pot pots[] = {
 #define NUM_POTS 11
 #endif
 #define INIT_POT_VAL -1000
-#define POTLOOPSET  16
-#define POTLOOPREAD 6
+#define POTLOOPSET  3 // 16
+#define POTLOOPREAD 3 // 6
 #define POTLOOPSKIP (POTLOOPSET + POTLOOPREAD)
 
 #if USE_ADC_LIB
@@ -234,25 +236,22 @@ uint16_t blockMillis = 0;
 void setupExpanders()
 {
   int i, j;
-  Adafruit_MCP23017 *expander;
+  Adafruit_MCP23X17 *expander;
   for (i = 0; i < 4; ++i)
   {
-    expander = new Adafruit_MCP23017();
-    expander->begin(i);
+    expander = new Adafruit_MCP23X17();
+    expander->begin_I2C(0x20 + i);
     expanders[i] = expander;
   }
   for (j = 0; j < NUM_ENCODERS; ++j)
   {
     encoder *enc = &encoders[j];
     expander = expanders[enc->expander];
-    expander->pinMode(enc->pinA, INPUT);
-    expander->pullUp(enc->pinA, HIGH); // turn on a 100K pullup internally
-    expander->pinMode(enc->pinB, INPUT);
-    expander->pullUp(enc->pinB, HIGH); // turn on a 100K pullup internally
+    expander->pinMode(enc->pinA, INPUT_PULLUP);
+    expander->pinMode(enc->pinB, INPUT_PULLUP);
     if (enc->pinSW >= 0)
     {
-      expander->pinMode(enc->pinSW, INPUT);
-      expander->pullUp(enc->pinSW, HIGH); // turn on a 100K pullup internally
+      expander->pinMode(enc->pinSW, INPUT_PULLUP);
       enc->debouncer = new BounceMcp();
       enc->debouncer->attach(*expander, enc->pinSW, blockMillis);
     }
@@ -261,8 +260,7 @@ void setupExpanders()
   {
     pushswitch *sw = &switches[j];
     expander = expanders[sw->expander];
-    expander->pinMode(sw->pin, INPUT);
-    expander->pullUp(sw->pin, HIGH); // turn on a 100K pullup internally
+    expander->pinMode(sw->pin, INPUT_PULLUP);
     sw->debouncer = new BounceMcp();
     sw->debouncer->attach(*expander, sw->pin, blockMillis);
     if (sw->led1pin >= 0)
@@ -538,6 +536,7 @@ void handleEncoderTurn(int i, int d)
     case PRESET_ENC:
       enablePresetButton = true;
       saveNewPresetSelected = false;
+      choosingKit = false;
       if (presetMenuMode)
       {
         showPresetLabel(preset);
@@ -558,6 +557,13 @@ void handleEncoderTurn(int i, int d)
           sprintf(tempstr, "Set to manual");
         else if (preset == SET_DEFAULT)
           sprintf(tempstr, "Init settings");
+        else if (preset == CHOOSE_KIT)
+        {
+          choosingKit = true;
+          textatrow(1, "Using samples:", LCD_BLACK, LCD_WHITE);
+          textatrow(2, getSetName(sampleSet), LCD_BLACK, LCD_WHITE);
+          break;  // break early
+        }
         else if (preset == MAX_PRESETS)
         {
           sprintf(tempstr, "Save new preset");
@@ -930,6 +936,17 @@ void handleEncoderPress(int i)
       else if (preset == SET_DEFAULT)
       {
         loadPreset(DEFAULT_CONFIG);
+      }
+      else if (preset == CHOOSE_KIT)
+      {
+        sampleSet++;
+        if (sampleSet >= getNumSampleSets())
+          sampleSet = -1; // default set
+        textatrow(2, getSetName(sampleSet), LCD_BLACK, LCD_WHITE);
+        if (loadSampleDesc(sampleSet))
+          needsKitUpdate = true;
+        else
+          Serial.printf("Failed to update description for set number %d [%s]\n", sampleSet, getSetName(sampleSet));
       }
       else if (preset == MAX_PRESETS)
       {
@@ -1310,7 +1327,7 @@ void handleEncoderShiftTurn(int i, bool back)
 void checkForDemoMode()
 {
   pushswitch *runsw = &switches[RUN];
-  Adafruit_MCP23017 *expander = expanders[runsw->expander];
+  Adafruit_MCP23X17 *expander = expanders[runsw->expander];
   demoMode = expander->digitalRead(runsw->pin) == LOW;
 }
 
@@ -1318,7 +1335,7 @@ void checkForDemoMode()
 bool checkForBackupPrevent()
 {
   pushswitch *pausesw = &switches[STEP];
-  Adafruit_MCP23017 *expander = expanders[pausesw->expander];
+  Adafruit_MCP23X17 *expander = expanders[pausesw->expander];
   return expander->digitalRead(pausesw->pin) == LOW;
 }
 
@@ -1326,7 +1343,7 @@ bool checkForBackupPrevent()
 void checkMIDIClock()
 {
   pushswitch *pausesw = &switches[STOP];
-  Adafruit_MCP23017 *expander = expanders[pausesw->expander];
+  Adafruit_MCP23X17 *expander = expanders[pausesw->expander];
   useMIDIClock = expander->digitalRead(pausesw->pin) == LOW;
   if (useMIDIClock)
   {
@@ -1343,7 +1360,7 @@ void buttonPressed(int j, int e)
 #endif      
   handleButton(j);
   // Serial.print(j);Serial.print(" ");Serial.print(sw->value);Serial.print(", ");
-  Adafruit_MCP23017 *expander = expanders[e];
+  Adafruit_MCP23X17 *expander = expanders[e];
   if (j >= NUM_SEQ_SWITCHES)
   {
 #if PROTOTYPE    
@@ -1469,7 +1486,7 @@ void handleButton(int i)
 #else
       encoder *selencoder = &encoders[0];
 #endif      
-      Adafruit_MCP23017 *expander = expanders[selencoder->expander];
+      Adafruit_MCP23X17 *expander = expanders[selencoder->expander];
       if (expander->digitalRead(selencoder->pinSW) == LOW)
       {
         (i == 4 ? seq1 : seq2)->togglePermute();
@@ -1677,7 +1694,7 @@ void handlePot(int i, int value)
     default:
     {
       int seqnum = i < 4 ? 0 : 1;
-      setStepValue(seqnum, i, round((value - 63.5) * 49 / 127.0));
+      setStepValue(seqnum, i, round((value - 63.5) * (2 * MAX_STEP + 1) / 127.0));
       break;
     }
   }
@@ -1686,7 +1703,7 @@ void handlePot(int i, int value)
 void setStepValue(int seqnum, int i, int value)
 {
   sequencerCfg *seqcfg = &config->seq[seqnum];
-  value = min(24, max(-24, value));
+  value = min(MAX_STEP, max(-MAX_STEP, value));
   i %= 4;
   if (seqcfg->steps[i] != value)
   {
@@ -1718,7 +1735,7 @@ void setupControls()
 //  showSelectSummary(selected);
   showTuning(&config->tuning);
   showTempo((int)round(60000.0 / poly->tempoToDelay(config->rhythm.tempo)));
-  Adafruit_MCP23017 *expander = expanders[1];
+  Adafruit_MCP23X17 *expander = expanders[1];
   expander->digitalWrite(STEP_LED, LOW);
   expander->digitalWrite(RUN_LED, LOW);
   expander->digitalWrite(HOLD_LED, LOW);
@@ -1732,7 +1749,7 @@ void setupControls()
     preset = -1;
 
     pushswitch *runsw = &switches[RUN];
-    Adafruit_MCP23017 *expander = expanders[runsw->expander];
+    Adafruit_MCP23X17 *expander = expanders[runsw->expander];
     while (expander->digitalRead(runsw->pin) == LOW)
       ;
 
@@ -1753,7 +1770,7 @@ void showSequencerState()
   {
     int j = 0;
     sequencerCfg seqcfg = config->seq[i];
-    Adafruit_MCP23017 *expander;
+    Adafruit_MCP23X17 *expander;
     pushswitch *sw;
     do 
     {
@@ -1877,9 +1894,18 @@ void checkControls(int loopcount)
     }
     else if (curmillis - lastupdatemillis > UPDATE_WAIT_TIME)
     {
-      saveNewPresetSelected = false;
-      showSelectSummary(selected);
-      lastupdatemillis = -1;
+      if (choosingKit)
+      {
+        textatrow(1, "Using samples:", LCD_BLACK, LCD_WHITE);
+        textatrow(2, getSetName(sampleSet), LCD_BLACK, LCD_WHITE);
+        lastupdatemillis = -1;
+      }
+      else
+      {
+        saveNewPresetSelected = false;
+        showSelectSummary(selected);
+        lastupdatemillis = -1;
+      }
       if (useMIDIClock)
       {
         int curbpm = getBPM();
@@ -2042,7 +2068,7 @@ void setSequenceLed(int seq, int led, bool onoff)
   if (i < 0 || i > 7)
     return;
   sequencerled *seqled = &seqleds[i];
-  Adafruit_MCP23017 *expander = expanders[seqled->expander];
+  Adafruit_MCP23X17 *expander = expanders[seqled->expander];
   expander->digitalWrite(seqled->pin, onoff ? HIGH : LOW); 
 }
 
@@ -2168,6 +2194,8 @@ bool loadPreset(int preset)
   
   if (preset == DEFAULT_CONFIG)
     pots[TEMPO_POT].adjust = NO_ADJUST;
+  
+  loadSampleSet(config->drum.sampleset);
 
   return true;
 }

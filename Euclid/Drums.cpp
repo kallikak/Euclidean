@@ -1,34 +1,10 @@
 #include "Drums.h"
 #include "Config.h"
 
-#include "drum_defs.h"
 #include "drum_samples.h"
 
 drumCfg *curCfg = NULL;//&(config->drum);
 float drumvol = 4;
-
-typedef struct
-{
-  int beats[4];
-} drumKit;
-
-#define NUM_KITS 13
-const drumKit kits[NUM_KITS] = 
-{
-  {DK_BASS, DK_SNARE, DK_TOM_H, DK_HAT_C}, 
-  {DK_BASS, DK_SNARE, DK_HAT_O, DK_HAT_C}, 
-  {DK_BASS, DK_SNARE, DK_CYMBAL, DK_HAT_C}, 
-  {DK_BASS, DK_SNARE, DK_HAT_C, DK_RIDECYMBAL},  
-  {DK_BASS, DK_SNARE, DK_HAT_C, DK_HAT_O}, 
-  {DK_BASS, DK_SNARE, DK_SNARE, DK_HAT_C}, 
-  {DK_TOM_L, DK_TOM_M, DK_TOM_H, DK_HAT_C}, 
-  {DK_TOM_L, DK_TOM_M, DK_TOM_H, DK_CLAVES},
-  {DK_BASS, DK_BASS, DK_BASS, DK_HAT_O},
-  {DK_SNARE, DK_SNARE, DK_SNARE, DK_HAT_O},
-  {DK_SNARE, DK_SNARE, DK_RIMSHOT, DK_HAT_O},
-  {DK_CONGA_L, DK_CONGA_M, DK_CONGA_H, DK_HAT_C},
-  {DK_CONGA_L, DK_CONGA_M, DK_CONGA_H, DK_CLAVES},
-};
 
 static int kitIndex = 0;
 
@@ -43,11 +19,14 @@ void initDrums(AudioMixer4 *mix, AudioPlayMemory *s1, AudioPlayMemory *s2, Audio
   sounds[2] = s3;
   sounds[3] = s4;
   curCfg = &(config->drum);
+  initSamples();
+  updateSamples(curCfg->beats[0], curCfg->beats[1], curCfg->beats[2], curCfg->beats[3]);
 }
 
 void setDrumsConfig(drumCfg *cfg)
 {
   curCfg = cfg;
+  loadSampleSet(cfg->sampleset);
 }
 
 bool drumsEnabled()
@@ -70,16 +49,16 @@ void managebeatstate(bool back)
     managebeatstate(back);
   else
   {
-    drummix->gain(0, curCfg->beatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[BEAT1]) * drumvol);
-    drummix->gain(1, curCfg->beatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[BEAT2]) * drumvol);
-    drummix->gain(2, curCfg->beatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[BEAT3]) * drumvol);
+    drummix->gain(0, curCfg->beatstate == BT_OFF ? 0 : drumvol);
+    drummix->gain(1, curCfg->beatstate == BT_OFF ? 0 : drumvol);
+    drummix->gain(2, curCfg->beatstate == BT_OFF ? 0 : drumvol);
   }
 }
 
 void manageoffbeatstate(bool back)
 {
   curCfg->offbeatstate = (beatState)((curCfg->offbeatstate + 5 + (back ? -1 : 1)) % 5);
-  drummix->gain(3, curCfg->offbeatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[OFFBEAT]) * drumvol);
+  drummix->gain(3, curCfg->offbeatstate == BT_OFF ? 0 : drumvol);
 }
 
 float adjustDrumsVolume(int d)
@@ -92,40 +71,45 @@ float adjustDrumsVolume(int d)
   int log_u = min(127, 3.0 * d / (1 + k * (1 - d / 127)));
   drumvol = 4 * log_u / 127.0;  // new samples are fairly low volume
 #endif  
-  drummix->gain(0, curCfg->beatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[BEAT1]) * drumvol);
-  drummix->gain(1, curCfg->beatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[BEAT2]) * drumvol);
-  drummix->gain(2, curCfg->beatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[BEAT3]) * drumvol);
-  drummix->gain(3, curCfg->offbeatstate == BT_OFF ? 0 : getVolumeFactor(curCfg->beats[OFFBEAT]) * drumvol);
+  drummix->gain(0, curCfg->beatstate == BT_OFF ? 0 : drumvol);
+  drummix->gain(1, curCfg->beatstate == BT_OFF ? 0 : drumvol);
+  drummix->gain(2, curCfg->beatstate == BT_OFF ? 0 : drumvol);
+  drummix->gain(3, curCfg->offbeatstate == BT_OFF ? 0 : drumvol);
   return drumvol / 4.0;
 }
 
 void managedrumclick(bool back)
 {
   kitIndex += (back ? -1 : 1);
-  if (kitIndex >= NUM_KITS)
+  if (kitIndex >= numKits)
     kitIndex = 0;
   else if (kitIndex < 0)
-    kitIndex = NUM_KITS - 1;
-
+    kitIndex = numKits - 1;
+  
   curCfg->beats[BEAT1] = kits[kitIndex].beats[BEAT1];
   curCfg->beats[BEAT2] = kits[kitIndex].beats[BEAT2];
   curCfg->beats[BEAT3] = kits[kitIndex].beats[BEAT3];
   curCfg->beats[OFFBEAT] = kits[kitIndex].beats[OFFBEAT];
+  
+  // kits[kitIndex].beats[BEAT1] != curCfg->beats[BEAT1]  
+  // updateSamples(curCfg->beats[0], curCfg->beats[1], curCfg->beats[2], curCfg->beats[3]);
+  needsKitUpdate = true;
 }
 
 void manageoffbeatclick(bool back)
 {
   curCfg->beats[OFFBEAT] = curCfg->beats[OFFBEAT] + (back ? -1 : 1);
   if (curCfg->beats[OFFBEAT] > DK_LAST)
-    curCfg->beats[OFFBEAT] = DK_BASS;
-  else if (curCfg->beats[OFFBEAT] < DK_BASS)
+    curCfg->beats[OFFBEAT] = DK_FIRST;
+  else if (curCfg->beats[OFFBEAT] < DK_FIRST)
     curCfg->beats[OFFBEAT] = DK_LAST;
+  // updateSamples(DK_OFF, DK_OFF, DK_OFF, curCfg->beats[3]);
+  needsOffbeatUpdate = true;
 }
 
 void playDrumSample(Beat beat, bool accent)
 {
   AudioPlayMemory *sound = sounds[beat];
-  int instr = curCfg->beats[beat];
 
   if (beat == BEAT1)
     drummix->gain(0, (accent ? 1.5 : 1) * drumvol);
@@ -133,57 +117,13 @@ void playDrumSample(Beat beat, bool accent)
     drummix->gain(1, (accent ? 1.5 : 1) * drumvol);
   else if (beat == BEAT3)
     drummix->gain(2, (accent ? 1.5 : 1) * drumvol);
-    
-  switch (instr)
+
+  switch (beat)
   {
-    case DK_BASS: 
-      sound->play(DK_BASS_ARRAY);
-      break;
-    case DK_HAT_C: 
-      sound->play(DK_HAT_C_ARRAY);
-      break;
-    case DK_HAT_O: 
-      sound->play(DK_HAT_O_ARRAY);
-      break;
-    case DK_SNARE: 
-      sound->play(DK_SNARE_ARRAY);
-      break;
-    case DK_TOM_L: 
-      sound->play(DK_TOM_L_ARRAY);
-      break;
-    case DK_TOM_M: 
-      sound->play(DK_TOM_M_ARRAY);
-      break;
-    case DK_TOM_H: 
-      sound->play(DK_TOM_H_ARRAY);
-      break;
-    case DK_CLAVES: 
-      sound->play(DK_CLAVES_ARRAY);
-      break;
-    case DK_CONGA_H: 
-      sound->play(DK_CONGA_H_ARRAY);
-      break;
-    case DK_CONGA_L: 
-      sound->play(DK_CONGA_L_ARRAY);
-      break;
-    case DK_CONGA_M: 
-      sound->play(DK_CONGA_M_ARRAY);
-      break;
-    case DK_CYMBAL: 
-      sound->play(DK_CYMBAL_ARRAY);
-      break;
-    case DK_MARACAS: 
-      sound->play(DK_MARACAS_ARRAY);
-      break;
-    case DK_RIMSHOT: 
-      sound->play(DK_RIMSHOT_ARRAY);
-      break;
-    case DK_RIDECYMBAL: 
-      sound->play(DK_RIDECYMBAL_ARRAY);
-      break;
-    case DK_OFF:
-    default:
-      break;
+    case BEAT1: if (drumSample1) sound->play(drumSample1); break;
+    case BEAT2: if (drumSample2) sound->play(drumSample2); break;
+    case BEAT3: if (drumSample3) sound->play(drumSample3); break;
+    case OFFBEAT: if (drumSample4) sound->play(drumSample4); break;
   }
 }
 

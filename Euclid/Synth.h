@@ -138,6 +138,8 @@ class Oscillator
     void getPlayingFrequencies(float *f, float *subf);
 };
 
+class AudioEffectEnsemble;
+
 class Effects
 {
   private:

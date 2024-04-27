@@ -88,13 +88,10 @@ void clearSerialInput()
 
 void checkSerialControl()
 {
-  if (Serial.available())
+  if (getSerialInput())
   {
-    if (getSerialInput())
-    {
-      runSerialCommand();
-      clearSerialInput();
-    }
+    runSerialCommand();
+    clearSerialInput();
   }
 }
       

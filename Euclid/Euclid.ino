@@ -3,10 +3,11 @@
 
 #include "MIDIManager.h"
 
+#include "effect_ensemble.h"
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
-#include <SD.h>
+// #include <SD.h>
 #include <SerialFlash.h>
 
 #include "Config.h"
@@ -17,6 +18,7 @@
 #include "Controls.h"
 #include "LCD.h"
 #include "Drums.h"
+#include "drum_samples.h"
 
 // GUItool: begin automatically generated code
 AudioSynthWaveform       LFO;            //xy=1012,692
@@ -147,6 +149,8 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=2566,384
 // GUItool: end automatically generated code
 
 bool off = true;
+bool needsKitUpdate = false;
+bool needsOffbeatUpdate = false;
 
 void setupSynth() 
 {
@@ -184,6 +188,8 @@ Synth *synth = NULL;
 
 seqadv beatcallback(int index, seqadv seqadvance);
 seqadv offbeatcallback(int index, seqadv seqadvance);
+
+bool needsNextBeats = false;
 
 int loopcount = 0;
 
@@ -380,9 +386,7 @@ bool checkBeat(Beat beat, int beat1, beatState state)
 }
 
 void notifybeats(int beat1, int beat2, int beat3, bool offbeat)
-{
-  showNextBeats(poly->getNext(10), 10);
-  
+{ 
   if (beat1 && isDrum(BEAT1))
   {
     if (checkBeat(BEAT1, beat1, config->drum.beatstate))
@@ -431,6 +435,8 @@ void notifybeats(int beat1, int beat2, int beat3, bool offbeat)
       playDrumSample(OFFBEAT, false); 
     }
   }
+  needsNextBeats = true;
+  // showNextBeats(poly->getNext(10), 10);
 }
 
 void setup(void) 
@@ -451,7 +457,7 @@ void setup(void)
   setupPresets();
   managePlayState();
   polySetup();
-  
+
   if (useMIDIClock)
   {
     // initially set to UNITY regardless of controller position
@@ -497,10 +503,32 @@ void loop()
         synth->modPWAmount(v, 1);
       }
     }
+
+    if (needsKitUpdate)
+    {
+      updateSamples(config->drum.beats[0], config->drum.beats[1], config->drum.beats[2], config->drum.beats[3]);
+      needsKitUpdate = false;
+    }
+    else if (needsOffbeatUpdate)
+    {
+      updateSamples(DK_OFF, DK_OFF, DK_OFF, config->drum.beats[3]);
+      needsOffbeatUpdate = false;
+    }
   }
 
   poly->handleCallbacks();
-  checkSerialControl();
+  if (loopcount % 55 == 0)
+  {
+    if (needsNextBeats)
+    {
+      showNextBeats(poly->getNext(10), 10);
+      needsNextBeats = false;
+    }
+  }
+  if (loopcount % 257 == 0)
+  {
+    checkSerialControl();
+  }
 }
 
 

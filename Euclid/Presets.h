@@ -4,6 +4,7 @@
 #define MAX_PRESETS (ROM_PRESETS + 100)
 #define SET_MANUAL (MAX_PRESETS+1)
 #define SET_DEFAULT (MAX_PRESETS+2)
+#define CHOOSE_KIT (MAX_PRESETS+3)
 #define DEFAULT_CONFIG -1
 
 void setupPresets();

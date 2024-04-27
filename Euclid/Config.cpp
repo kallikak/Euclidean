@@ -17,7 +17,7 @@ euclid_config defaultConfig = {
   {NONE, BYPASS, BYPASS, BYPASS},       // effect
   {{{0, 0, 0, 0}, true, true, {true, false, false}, false}, {{0, 0, 0, 0}, true, true, {false, false, false}, true}}, // sequencers
   {-1, {4, 16, 0}, {5, 16, 0}, {3, 16, 3}},  // rhythm
-  {BT_SEL, BT_SEL, {100, 101, 106, 102}}  // drums
+  {BT_SEL, BT_SEL, {100, 101, 106, 102}, "Default"}  // drums
 };
 
 euclid_config activeConfig = defaultConfig;
@@ -269,6 +269,11 @@ void printDrumConfig(drumCfg *cfg)
   Serial.print(beatstateStr(cfg->offbeatstate));
   Serial.print(", ");
   Serial.print(getKitString(false));
+  if (cfg->sampleset)
+  {
+    Serial.print(", ");
+    Serial.println(cfg->sampleset);
+  }
 }
 
 void printConfig(euclid_config *cfg)

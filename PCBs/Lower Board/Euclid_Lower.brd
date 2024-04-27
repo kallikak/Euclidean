@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="6.1">
+<eagle version="8.2.1">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -68,7 +68,7 @@
 <layer number="60" name="bCarbon" color="7" fill="1" visible="no" active="no"/>
 <layer number="88" name="SimResults" color="9" fill="1" visible="no" active="yes"/>
 <layer number="89" name="SimProbes" color="9" fill="1" visible="no" active="yes"/>
-<layer number="90" name="Modules" color="5" fill="1" visible="no" active="yes"/>
+<layer number="90" name="Modules" color="5" fill="1" visible="no" active="no"/>
 <layer number="91" name="Nets" color="2" fill="1" visible="no" active="no"/>
 <layer number="92" name="Busses" color="1" fill="1" visible="no" active="no"/>
 <layer number="93" name="Pins" color="2" fill="1" visible="no" active="no"/>
@@ -3146,7 +3146,7 @@ diameter 6 mm, grid 5.08 mm</description>
 <class number="0" name="default" width="0" drill="0">
 </class>
 </classes>
-<designrules>
+<designrules name="default">
 <description language="de">&lt;b&gt;EAGLE Design Rules&lt;/b&gt;
 &lt;p&gt;
 Die Standard-Design-Rules sind so gewählt, dass sie für 
@@ -3232,6 +3232,9 @@ design rules under a new name.</description>
 <autorouter>
 <pass name="Default">
 <param name="RoutingGrid" value="10mil"/>
+<param name="AutoGrid" value="1"/>
+<param name="Efforts" value="0"/>
+<param name="TopRouterVariant" value="1"/>
 <param name="tpViaShape" value="round"/>
 <param name="PrefDir.1" value="|"/>
 <param name="PrefDir.2" value="0"/>
@@ -3325,8 +3328,8 @@ design rules under a new name.</description>
 <elements>
 <element name="U$1" library="Teensy4.0_SIMPLE" package="TEENSY4.0_SIMPLE" value="TEENSY4.0_SIMPLE" x="88.9" y="118.745" smashed="yes"/>
 <element name="PWR_SEL" library="SparkFun-Connectors" package="1X03" value="455-1750-1-ND" x="156.21" y="96.52" smashed="yes">
-<attribute name="PROD_ID" value="XXX-00000" x="156.21" y="96.52" size="1.778" layer="27" display="off"/>
 <attribute name="NAME" x="154.94" y="97.917" size="1.27" layer="25" font="vector"/>
+<attribute name="PROD_ID" value="XXX-00000" x="156.21" y="96.52" size="1.778" layer="27" display="off"/>
 <attribute name="VALUE" x="154.94" y="94.488" size="0.6096" layer="27" font="vector" ratio="20"/>
 </element>
 <element name="R32" library="resistor" package="0207/10" value="1K" x="127" y="82.55"/>
@@ -3334,19 +3337,19 @@ design rules under a new name.</description>
 <element name="R34" library="resistor" package="0207/10" value="47" x="140.97" y="111.76"/>
 <element name="R36" library="resistor" package="0207/10" value="220" x="128.27" y="111.76" rot="R180"/>
 <element name="OK1" library="optocoupler" package="DIL08" value="6N138" x="130.81" y="93.98" rot="R180">
-<attribute name="OC_NEWARK" value="35K5294" x="154.94" y="83.82" size="1.778" layer="27" rot="R180" display="off"/>
-<attribute name="MPN" value="6N138" x="154.94" y="83.82" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="MF" value="VISHAY/TELEFUNKEN" x="154.94" y="83.82" size="1.778" layer="27" rot="R180" display="off"/>
+<attribute name="MPN" value="6N138" x="154.94" y="83.82" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="OC_FARNELL" value="9860150" x="154.94" y="83.82" size="1.778" layer="27" rot="R180" display="off"/>
+<attribute name="OC_NEWARK" value="35K5294" x="154.94" y="83.82" size="1.778" layer="27" rot="R180" display="off"/>
 </element>
 <element name="IN" library="SparkFun-Connectors" package="DIN5-RA-PTH" value="DIN5" x="128.27" y="135.89" smashed="yes" rot="R180">
-<attribute name="PROD_ID" value="CONN-09481" x="163.83" y="157.48" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="NAME" x="129.54" y="131.826" size="1.27" layer="25" font="vector" rot="R180"/>
+<attribute name="PROD_ID" value="CONN-09481" x="163.83" y="157.48" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="VALUE" x="129.54" y="131.953" size="0.6096" layer="27" font="vector" ratio="20" rot="R180"/>
 </element>
 <element name="OUT" library="SparkFun-Connectors" package="DIN5-RA-PTH" value="DIN5" x="147.32" y="135.89" smashed="yes" rot="R180">
-<attribute name="PROD_ID" value="CONN-09481" x="226.06" y="157.48" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="NAME" x="148.59" y="131.826" size="1.27" layer="25" font="vector" rot="R180"/>
+<attribute name="PROD_ID" value="CONN-09481" x="226.06" y="157.48" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="VALUE" x="148.59" y="131.953" size="0.6096" layer="27" font="vector" ratio="20" rot="R180"/>
 </element>
 <element name="C5" library="resistor" package="C025-025X050" value="0.1uF" x="163.83" y="116.84"/>
@@ -3355,28 +3358,28 @@ design rules under a new name.</description>
 <element name="J1" library="SparkFun-Connectors" package="USB-B-NO-OVERHANG" value="USB_B" x="165.1" y="129.35" rot="R270"/>
 <element name="R37" library="resistor" package="0207/10" value="47" x="148.59" y="107.95" rot="R180"/>
 <element name="J3" library="SparkFun-Connectors" package="USB-A-H" value="USB_A_PTH_MALE" x="107.95" y="125.19" rot="MR270">
-<attribute name="SF_ID" value="PRT-00437" x="107.95" y="125.19" size="1.778" layer="28" rot="MR270" display="off"/>
 <attribute name="PROD_ID" value="CONN-08367" x="107.95" y="125.19" size="1.778" layer="28" rot="MR270" display="off"/>
+<attribute name="SF_ID" value="PRT-00437" x="107.95" y="125.19" size="1.778" layer="28" rot="MR270" display="off"/>
 </element>
 <element name="J4" library="SparkFun-Connectors" package="1X02" value="" x="107.95" y="111.76" smashed="yes">
 <attribute name="NAME" x="106.68" y="113.157" size="1.27" layer="25" font="vector"/>
 <attribute name="VALUE" x="106.68" y="109.728" size="0.6096" layer="27" font="vector" ratio="20"/>
 </element>
 <element name="LINE_OUT" library="SparkFun-Connectors" package="AUDIO-JACK-KIT" value="" x="31.75" y="132.08" smashed="yes" rot="R270">
-<attribute name="SF_ID" value="PRT-08032" x="31.75" y="132.08" size="1.778" layer="27" rot="R270" display="off"/>
-<attribute name="PROD_ID" value="CONN-08774" x="31.75" y="132.08" size="1.778" layer="27" rot="R270" display="off"/>
 <attribute name="NAME" x="27.94" y="122.682" size="1.27" layer="25" font="vector"/>
+<attribute name="PROD_ID" value="CONN-08774" x="31.75" y="132.08" size="1.778" layer="27" rot="R270" display="off"/>
+<attribute name="SF_ID" value="PRT-08032" x="31.75" y="132.08" size="1.778" layer="27" rot="R270" display="off"/>
 <attribute name="VALUE" x="29.083" y="133.35" size="0.6096" layer="27" font="vector" ratio="20" rot="R270"/>
 </element>
-<element name="D15" library="adafruit" package="DO-1N4148" value="" x="130.81" y="104.14" smashed="yes">
+<element name="D15" library="adafruit" package="DO-1N4148" value="1n4148" x="130.81" y="104.14" smashed="yes">
 <attribute name="NAME" x="128.27" y="105.41" size="1.27" layer="25"/>
 <attribute name="VALUE" x="128.778" y="103.886" size="0.6096" layer="21"/>
 </element>
 <element name="SV1" library="con-lstb" package="MA10-2" value="" x="54.76" y="67.39" rot="R90">
-<attribute name="OC_NEWARK" value="unknown" x="54.76" y="67.39" size="1.778" layer="27" rot="R90" display="off"/>
-<attribute name="MPN" value="" x="54.76" y="67.39" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="MF" value="" x="54.76" y="67.39" size="1.778" layer="27" rot="R90" display="off"/>
+<attribute name="MPN" value="" x="54.76" y="67.39" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="OC_FARNELL" value="unknown" x="54.76" y="67.39" size="1.778" layer="27" rot="R90" display="off"/>
+<attribute name="OC_NEWARK" value="unknown" x="54.76" y="67.39" size="1.778" layer="27" rot="R90" display="off"/>
 </element>
 <element name="S1" library="switch" package="9070-1W" value="" x="16.51" y="128.27" rot="R270"/>
 <element name="C1" library="rcl" package="TT5D6" value="10uF" x="171.45" y="93.98" rot="R270"/>
@@ -3409,9 +3412,7 @@ design rules under a new name.</description>
 <contactref element="R32" pad="1"/>
 <contactref element="OK1" pad="5"/>
 <contactref element="C6" pad="2"/>
-<contactref element="J1" pad="GND"/>
 <contactref element="C5" pad="2"/>
-<contactref element="J3" pad="GND"/>
 <contactref element="J3" pad="GND"/>
 <contactref element="C1" pad="-"/>
 <contactref element="SV1" pad="1"/>
@@ -3497,7 +3498,7 @@ design rules under a new name.</description>
 <wire x1="50.292" y1="133.858" x2="50.34" y2="133.985" width="0.1524" layer="1"/>
 </signal>
 <signal name="VCC">
-<contactref element="U$1" pad="3.3V@1" route="any"/>
+<contactref element="U$1" pad="3.3V@1" route="any" routetag="G$1.3.3V"/>
 <contactref element="R33" pad="2"/>
 <contactref element="OK1" pad="8"/>
 <contactref element="R37" pad="2"/>

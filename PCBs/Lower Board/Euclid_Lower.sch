@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="6.1">
+<eagle version="8.2.1">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -17010,7 +17010,7 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <part name="J3" library="SparkFun-Connectors" deviceset="USB_A" device="_PTH_MALE"/>
 <part name="J4" library="SparkFun-Connectors" deviceset="CONN_02" device=""/>
 <part name="LINE_OUT" library="SparkFun-Connectors" deviceset="AUDIO_JACK_3.5MM" device="_KIT" value=""/>
-<part name="D15" library="adafruit" deviceset="DIODE" device="DO-1N4148"/>
+<part name="D15" library="adafruit" deviceset="DIODE" device="DO-1N4148" value="1n4148"/>
 <part name="SV1" library="con-lstb" deviceset="MA10-2" device=""/>
 <part name="SUPPLY2" library="supply2" deviceset="VCC" device=""/>
 <part name="GND2" library="supply1" deviceset="GND" device=""/>

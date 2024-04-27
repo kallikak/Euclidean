@@ -2,12 +2,10 @@
 
 #define PROTOTYPE 0
 
-#define DEBUG_SERIAL 0
+#define MAX_STEP 16
+#define MAX_SAMPLESET_NAME_LENGTH 20
 
-#define DBG(v) {Serial.print(#v " = ");Serial.println(v);}
-#define DBG2(s,v) {Serial.print(#s " = ");Serial.println(v);}
-#define DBG3(s,v) {Serial.print(#s ", " #v " = ");Serial.println(v);}
-#define DBGLINE {Serial.println("----------------");}
+#define DEBUG_SERIAL 0
 
 #include <Audio.h>
 
@@ -99,7 +97,7 @@ typedef struct
 
 typedef struct
 {
-   int steps[4]; // -24 to 24
+   int steps[4]; // -MAX_STEP to MAX_STEP
    bool applyOsc;
    bool applySub;
    bool advBeat[3];
@@ -153,6 +151,7 @@ typedef struct
   beatState beatstate;
   beatState offbeatstate;
   int beats[4];
+  char sampleset[MAX_SAMPLESET_NAME_LENGTH + 1];
 } drumCfg;
 
 typedef struct
@@ -172,6 +171,9 @@ typedef struct
 extern config_ptr config;
 
 extern bool useMIDIClock;
+
+extern bool needsKitUpdate;
+extern bool needsOffbeatUpdate;
 
 void setDefaultConfig();
 
